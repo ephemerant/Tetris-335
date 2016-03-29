@@ -56,6 +56,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+Debug/
+
 # Windows
 # =========================
 
@@ -77,3 +79,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+*.suo
+source.cpp
+*.sln
+Tetris 1.0.vcxproj
+*.filters

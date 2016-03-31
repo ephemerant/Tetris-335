@@ -23,17 +23,34 @@ int piece[4][4];
 int pieceX;
 int pieceY;
 
+bool rightDown = false;
+bool leftDown = false;
+
+int rightDownTime = 0;
+int leftDownTime = 0;
+
+bool downDown = false;
+
 // Prototypes
 
 void update();
 void init();
 
 void draw();
+
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
 void drawGrid();
 void drawPiece();
+
 void nextPiece();
 void rotatePiece(bool clockwise = true);
+
+void moveX(int dir);
+void moveY();
+
+void projectPiece();
+
+bool collisionDetected();
 
 // Variables (SDL)
 
@@ -72,7 +89,7 @@ int main(int argc, char* args[])
 	{
 		update();
 
-		if (SDL_PollEvent(&event))
+		while (SDL_PollEvent(&event))
 		{
 			// Handle keyboard events
 			if (event.type == SDL_KEYDOWN)
@@ -84,9 +101,27 @@ int main(int argc, char* args[])
 				case SDLK_UP: // "UP" pressed
 					rotatePiece(); break;
 				case SDLK_RIGHT: // "RIGHT" pressed
-					pieceX++; break;
+					rightDown = true; break;
 				case SDLK_LEFT: // "LEFT" pressed
-					pieceX--; break;
+					leftDown = true; break;
+				case SDLK_DOWN: // "DOWN" pressed
+					downDown = true; break;
+				}
+			}
+			else if (event.type == SDL_KEYUP)
+			{
+				switch (event.key.keysym.sym)
+				{
+				case SDLK_RIGHT: // "RIGHT" released
+					rightDown = false;
+					rightDownTime = 0;
+					break;
+				case SDLK_LEFT: // "LEFT" released
+					leftDown = false;
+					leftDownTime = 0;
+					break;
+				case SDLK_DOWN: // "DOWN" released
+					downDown = false; break;
 				}
 			}
 			// "X" clicked
@@ -95,7 +130,6 @@ int main(int argc, char* args[])
 				return 0;
 			}
 		}
-
 	}
 
 	return 0;
@@ -200,6 +234,7 @@ void rotatePiece(bool clockwise)
 	if (piece[1][1] == 6) return;
 
 	int tempPiece[4][4];
+	int backupPiece[4][4];
 
 	bool firstRowCount = false;
 
@@ -218,6 +253,7 @@ void rotatePiece(bool clockwise)
 				tempPiece[y][x] = piece[x][3 - y];
 				firstRowCount = firstRowCount || (y == 0 && tempPiece[y][x] != 0);
 			}
+			backupPiece[y][x] = piece[y][x];
 		}
 	}
 
@@ -242,16 +278,96 @@ void rotatePiece(bool clockwise)
 			piece[y][x] = tempPiece[y][x];
 		}
 	}
+
+	// If collision, cancel rotation
+	if (collisionDetected())
+	{
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				piece[y][x] = backupPiece[y][x];
+			}
+		}
+	}
 }
 
-// handle gravity/graphics
+bool collisionDetected()
+{
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			if (!piece[y][x])
+				continue;
+
+			// Horizontal overlap with border
+			if (pieceX + x > 9 || pieceX + x < 0)
+				return true;
+
+			// Vertical overlap with border
+			if (pieceY + y > 19 || pieceY + y < 0)
+				return true;
+
+			// Collision with grid
+			if (grid[y + pieceY][x + pieceX] != 0)
+				return true;
+		}
+	}
+	return false;
+}
+
+// Attempt to move the piece left or right
+void moveX(int dir)
+{
+	pieceX += dir;
+
+	if (collisionDetected())
+		pieceX -= dir;
+}
+
+// Attempt to apply gravity to the piece
+void moveY()
+{
+	pieceY++;
+
+	if (collisionDetected())
+	{
+		pieceY--;
+		projectPiece();
+		nextPiece();
+	}
+}
+
+// Project the piece onto the grid
+void projectPiece()
+{
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			// Overwrite blank squares
+			if (!grid[y + pieceY][x + pieceX])
+				grid[y + pieceY][x + pieceX] = piece[y][x];
+		}
+	}
+}
+
+// Handle gravity/graphics/movement
 void update()
 {
+	if (rightDown && !leftDown && !(rightDownTime++ % 300))
+		moveX(1);
+	else if (!rightDown && leftDown && !(leftDownTime++ % 300))
+		moveX(-1);
+
+	if (downDown)
+		ticks += 14;
+
 	if (++ticks > ticksPerFall)
-	{	
-		pieceY++;
+	{
+		moveY();
 		ticks = 0;
-		cout << "Fall!";
 	}
 
 	draw();

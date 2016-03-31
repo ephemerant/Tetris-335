@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <string>
 #include <ctype.h>
@@ -16,15 +17,23 @@ extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 int ticks = 0;
 const int ticksPerFall = 1200;
 
-int grid[20][10] = { 0 };
+int grid[20][10];
+int piece[4][4];
+
+int pieceX;
+int pieceY;
 
 // Prototypes
 
 void update();
 void init();
 
-void drawGUI();
+void draw();
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
+void drawGrid();
+void drawPiece();
+void nextPiece();
+void rotatePiece(bool clockwise = true);
 
 // Variables (SDL)
 
@@ -32,7 +41,13 @@ SDL_Event event;
 
 SDL_Surface *screen;
 
-SDL_Surface *SPRITE_BLUE;
+SDL_Surface *SQUARE_BLUE;
+SDL_Surface *SQUARE_CYAN;
+SDL_Surface *SQUARE_RED;
+SDL_Surface *SQUARE_YELLOW;
+SDL_Surface *SQUARE_ORANGE;
+SDL_Surface *SQUARE_PURPLE;
+SDL_Surface *SQUARE_GREEN;
 
 SDL_Rect borderOuter;
 SDL_Rect borderInner;
@@ -51,6 +66,8 @@ int main(int argc, char* args[])
 
 	init();
 
+	nextPiece();
+
 	while (true)
 	{
 		update();
@@ -64,6 +81,12 @@ int main(int argc, char* args[])
 				{
 				case SDLK_ESCAPE: // "Escape" pressed
 					return 0;
+				case SDLK_UP: // "UP" pressed
+					rotatePiece(); break;
+				case SDLK_RIGHT: // "RIGHT" pressed
+					pieceX++; break;
+				case SDLK_LEFT: // "LEFT" pressed
+					pieceX--; break;
 				}
 			}
 			// "X" clicked
@@ -80,44 +103,178 @@ int main(int argc, char* args[])
 
 void init()
 {
-	SPRITE_BLUE = LoadSurfaceFromFile("../img/blue.png");
+	srand(time(NULL));
 
-	borderOuter.x = 100;
-	borderOuter.y = 100;
-	borderOuter.h = 400;
-	borderOuter.w = 400;
+	// Load pieces
+	SQUARE_BLUE = LoadSurfaceFromFile("img/blue.png");
+	SQUARE_RED = LoadSurfaceFromFile("img/red.png");
+	SQUARE_GREEN = LoadSurfaceFromFile("img/green.png");
+	SQUARE_YELLOW = LoadSurfaceFromFile("img/yellow.png");
+	SQUARE_CYAN = LoadSurfaceFromFile("img/cyan.png");
+	SQUARE_PURPLE = LoadSurfaceFromFile("img/purple.png");
+	SQUARE_ORANGE = LoadSurfaceFromFile("img/orange.png");
 
-	borderInner.x = borderOuter.x + 20;
-	borderInner.y = borderOuter.y + 20;
-	borderInner.h = borderOuter.h - 20 * 2;
-	borderInner.w = borderOuter.w - 20 * 2;
+	// Set border
+	borderInner.x = 200;
+	borderInner.y = 100;
+	borderInner.h = 400;
+	borderInner.w = 200;
+
+	borderOuter.x = borderInner.x - 10;
+	borderOuter.y = borderInner.y - 10;
+	borderOuter.h = borderInner.h + 10 * 2;
+	borderOuter.w = borderInner.w + 10 * 2;
+
+	// Reset arrays
+	memset(grid, 0, sizeof(grid[0][0]) * 200);
+
+	//// Fill grad with random data
+	//for (int y = 0; y < 20; y++)
+	//{
+	//	for (int x = 0; x < 10; x++)
+	//	{
+	//		grid[y][x] = rand() % 7 + 1;
+	//	}
+	//}
 }
 
+void nextPiece()
+{
+	memset(piece, 0, sizeof(piece[0][0]) * 16);
+
+	int color = rand() % 7 + 1;
+
+	pieceX = 0;
+	pieceY = 0;
+
+	switch (color)
+	{
+	case 1: // J
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[1][3] = color;
+		piece[2][3] = color;
+		break;
+	case 2: // Z
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[2][2] = color;
+		piece[2][3] = color;
+		break;
+	case 3: // S		
+		piece[1][2] = color;
+		piece[1][3] = color;
+		piece[2][1] = color;
+		piece[2][2] = color;
+		break;
+	case 4: // I
+		piece[1][0] = color;
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[1][3] = color;
+		break;
+	case 5: // T		
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[1][3] = color;
+		piece[2][2] = color;
+		break;
+	case 6: // O
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[2][1] = color;
+		piece[2][2] = color;
+		break;
+	case 7: // L
+		piece[1][1] = color;
+		piece[1][2] = color;
+		piece[1][3] = color;
+		piece[2][1] = color;
+		break;
+	}
+}
+
+void rotatePiece(bool clockwise)
+{
+	// O (i.e. the "square") will never be rotated
+	if (piece[1][1] == 6) return;
+
+	int tempPiece[4][4];
+
+	bool firstRowCount = false;
+
+	// Simple rotation
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			if (clockwise)
+			{
+				tempPiece[x][3 - y] = piece[y][x];
+				firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
+			}
+			else
+			{
+				tempPiece[y][x] = piece[x][3 - y];
+				firstRowCount = firstRowCount || (y == 0 && tempPiece[y][x] != 0);
+			}
+		}
+	}
+
+	// If first row of the piece is empty, shift everything up by one
+	if (!firstRowCount)
+	{
+		for (int y = 1; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				tempPiece[y - 1][x] = tempPiece[y][x];
+				tempPiece[y][x] = 0;
+			}
+		}
+	}
+
+	// Copy back into piece
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			piece[y][x] = tempPiece[y][x];
+		}
+	}
+}
+
+// handle gravity/graphics
 void update()
 {
-	drawGUI();
-
 	if (++ticks > ticksPerFall)
-	{
+	{	
+		pieceY++;
 		ticks = 0;
 		cout << "Fall!";
 	}
+
+	draw();
 
 	// Refresh the screen
 	SDL_Flip(screen);
 }
 
-void drawGUI()
+// graphics "master function"
+void draw()
 {
 	// Clear everything
 	SDL_FillRect(screen, NULL, 0);
 
-	// Grid border
-	SDL_FillRect(screen, &borderOuter, SDL_MapRGB(screen->format, 0, 200, 255));
+	// Draw grid border
+	SDL_FillRect(screen, &borderOuter, SDL_MapRGB(screen->format, 0, 225, 255));
 	SDL_FillRect(screen, &borderInner, 0);
 
-	// Grid
-	drawImage(300, 300, SPRITE_BLUE, screen);
+	// Draw blocks in the grid
+	drawGrid();
+
+	// Draw the piece
+	drawPiece();
 }
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest)
@@ -127,6 +284,70 @@ void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest)
 	offset.y = y;
 
 	SDL_BlitSurface(src, NULL, dest, &offset);
+}
+
+void drawGrid()
+{
+	for (int y = 0; y < 20; y++)
+	{
+		for (int x = 0; x < 10; x++)
+		{
+			SDL_Surface *SQUARE_CURRENT = NULL;
+
+			switch (grid[y][x])
+			{
+			case 1:
+				SQUARE_CURRENT = SQUARE_BLUE; break;
+			case 2:
+				SQUARE_CURRENT = SQUARE_RED; break;
+			case 3:
+				SQUARE_CURRENT = SQUARE_GREEN; break;
+			case 4:
+				SQUARE_CURRENT = SQUARE_CYAN; break;
+			case 5:
+				SQUARE_CURRENT = SQUARE_PURPLE; break;
+			case 6:
+				SQUARE_CURRENT = SQUARE_YELLOW; break;
+			case 7:
+				SQUARE_CURRENT = SQUARE_ORANGE; break;
+			}
+
+			if (SQUARE_CURRENT != NULL)
+				drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, screen);
+		}
+	}
+}
+
+void drawPiece()
+{
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			SDL_Surface *SQUARE_CURRENT = NULL;
+
+			switch (piece[y][x])
+			{
+			case 1:
+				SQUARE_CURRENT = SQUARE_BLUE; break;
+			case 2:
+				SQUARE_CURRENT = SQUARE_RED; break;
+			case 3:
+				SQUARE_CURRENT = SQUARE_GREEN; break;
+			case 4:
+				SQUARE_CURRENT = SQUARE_CYAN; break;
+			case 5:
+				SQUARE_CURRENT = SQUARE_PURPLE; break;
+			case 6:
+				SQUARE_CURRENT = SQUARE_YELLOW; break;
+			case 7:
+				SQUARE_CURRENT = SQUARE_ORANGE; break;
+			}
+
+			if (SQUARE_CURRENT != NULL)
+				drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, screen);
+		}
+	}
 }
 
 SDL_Surface *LoadSurfaceFromFile(string filename)

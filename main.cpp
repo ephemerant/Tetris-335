@@ -2,10 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
 #include <string>
 #include <ctype.h>
-
 #include <windows.h>
 
 #include "SDL/SDL.h"
@@ -15,7 +13,6 @@
 extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 
 // Variables
-
 int ticks = 0;
 const int ticksPerFall = 1000;
 
@@ -39,7 +36,6 @@ int leftDownTime = 0;
 bool downDown = false;
 
 // Prototypes
-
 void update();
 
 void init();
@@ -68,7 +64,6 @@ void clearRows();
 bool collisionDetected();
 
 // Variables (SDL)
-
 SDL_Event event;
 
 SDL_Surface *SCREEN;
@@ -90,14 +85,11 @@ SDL_Rect borderInner;
 Mix_Music *AUDIO_MAIN;
 
 Mix_Chunk *AUDIO_LINE;
-Mix_Chunk *AUDIO_LAND;
 
 // Protypes (SDL)
-
 SDL_Surface *LoadImage(std::string filename);
 
 // Main
-
 using namespace std;
 
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -277,25 +269,28 @@ void loadPieceType(int(&piece)[4][4], int color)
 }
 
 void rotatePiece() {
-	if (piece[1][1] == 6) return; // O (i.e. the "square") will never be rotated
-
 	int tempPiece[4][4];
 	int backupPiece[4][4];
 
 	bool firstRowCount = false;
+	bool secondRowCount = false;
+	bool lastRowCount = false;
 
 	// Simple clockwise rotation
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			tempPiece[x][3 - y] = piece[y][x];
+
 			firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
+			secondRowCount = secondRowCount || (x == 1 && piece[y][x] != 0);
+			lastRowCount = lastRowCount || (x == 3 && piece[y][x] != 0);
 
 			backupPiece[y][x] = piece[y][x];
 		}
 	}
 
-	// If first row of the piece is empty, shift everything up by one
-	if (!firstRowCount) {
+	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
+	if (!firstRowCount && (!secondRowCount || lastRowCount)) {
 		for (int y = 1; y < 4; y++) {
 			for (int x = 0; x < 4; x++) {
 				tempPiece[y - 1][x] = tempPiece[y][x];
@@ -321,13 +316,13 @@ bool collisionDetected() {
 		for (int x = 0; x < 4; x++) {
 			if (!piece[y][x])
 				continue;
-						
+
 			if (pieceX + x > 9 || pieceX + x < 0) // Horizontal overlap with border
 				return true;
-						
+
 			if (pieceY + y > 19 || pieceY + y < 0) // Vertical overlap with border
 				return true;
-						
+
 			if (grid[y + pieceY][x + pieceX] != 0) // Collision with grid
 				return true;
 		}

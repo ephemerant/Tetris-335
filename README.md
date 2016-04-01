@@ -1,17 +1,28 @@
 # Tetris
 
-## Introduction
+### Table of Contents
 
-## Background
+1. [Introduction](#introduction)
+1. [Background](#background)
+1. [Code](#code)
+1. [Documentation](#documentation)
+1. [Problems & Solutions](#problems--solutions)
+1. [Future Work](#future-work)
+1. [Conclusions](#conclusions)
+1. [User Manual](#user-manual)
 
-## Code
+### Introduction
 
-## Documentation
+### Background
 
-## Problems & Solutions
+### Code
 
-## Future Work
+### Documentation
 
-## Conclusions
+### Problems & Solutions
 
-## User Manual
+### Future Work
+
+### Conclusions
+
+### User Manual

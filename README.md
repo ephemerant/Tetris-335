@@ -22,7 +22,7 @@ The general requirements were:
 
 ## Background
 
-![](http://i.imgur.com/1rEzStd.png)
+![](https://raw.githubusercontent.com/ephemerant/Tetris-335/master/img/alexey.png)
 
 > In 1984, Alexey Pajitnov was diligently programming computer games that tested the capabilities of new equipment developed by the USSR. In his spare time, he drew inspiration from his favorite puzzle board game, Pentominos, and decided to create a computer game for himself. Pajitnov envisioned an electronic game that let players arrange puzzle pieces in real time as they fell from the top of the playing field. The resulting design was a game that used seven distinctive geometric playing pieces, each made up of four squares. Pajitnov called this game “Tetris,” a combination of “tetra” (the Greek word meaning “four”) and “tennis” (his favorite sport).
 
@@ -40,13 +40,11 @@ The general clockwise rotation of a 4x4 zero-indexed grid is a simple transforma
 
 In order to keep the pieces centered in their grids, if the first row is blank and either the second row is blank or the last row is not blank, everything is shifted up by one.
 
-These methods combine to provide an algorithm that exactly imitates the following image.
+These methods combine to provide an algorithm that exactly follows the following image:
 
-*Note: Clockwise rotations go from right to left in this image*
+![](https://raw.githubusercontent.com/ephemerant/Tetris-335/master/img/when-to-shift.png)
 
-![](https://i.imgur.com/6AMgXMy.png)
-
-*--[ColinFahey.com](http://colinfahey.com/tetris/tetris.html)*
+*--Graphic by Clayton McGuire
 
 #### Smooth Controls
 

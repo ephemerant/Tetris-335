@@ -6,6 +6,8 @@
 #include <string>
 #include <ctype.h>
 
+#include <windows.h>
+
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_mixer.h"
@@ -15,16 +17,21 @@ extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 // Variables
 
 int ticks = 0;
-const int ticksPerFall = 1200;
+const int ticksPerFall = 1000;
 
 int grid[20][10];
+
 int piece[4][4];
+int nextPiece[4][4];
 
 int pieceX;
 int pieceY;
 
 bool rightDown = false;
 bool leftDown = false;
+
+bool titleScreen = true;
+bool gameOver = false;
 
 int rightDownTime = 0;
 int leftDownTime = 0;
@@ -34,21 +41,27 @@ bool downDown = false;
 // Prototypes
 
 void update();
+
 void init();
+void beginGame();
 
 void draw();
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
 void drawGrid();
-void drawPiece();
 
-void nextPiece();
+void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
+
+void loadNextPiece();
+void loadPieceType(int(&piece)[4][4], int color);
+
 void rotatePiece(bool clockwise = true);
 
 void moveX(int dir);
 void moveY();
 
 void projectPiece();
+void clearRows();
 
 bool collisionDetected();
 
@@ -56,7 +69,10 @@ bool collisionDetected();
 
 SDL_Event event;
 
-SDL_Surface *screen;
+SDL_Surface *SCREEN;
+
+SDL_Surface *TITLE_SCREEN;
+SDL_Surface *GAME_OVER;
 
 SDL_Surface *SQUARE_BLUE;
 SDL_Surface *SQUARE_CYAN;
@@ -71,19 +87,17 @@ SDL_Rect borderInner;
 
 // Protypes (SDL)
 
-SDL_Surface *LoadSurfaceFromFile(std::string filename);
+SDL_Surface *LoadImage(std::string filename);
 
 // Main
 
 using namespace std;
 
-int main(int argc, char* args[])
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	screen = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
+	SCREEN = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
 
 	init();
-
-	nextPiece();
 
 	while (true)
 	{
@@ -91,41 +105,59 @@ int main(int argc, char* args[])
 
 		while (SDL_PollEvent(&event))
 		{
-			// Handle keyboard events
-			if (event.type == SDL_KEYDOWN)
+			if (titleScreen || gameOver)
 			{
-				switch (event.key.keysym.sym)
+				// Handle keyboard events
+				if (event.type == SDL_KEYDOWN)
 				{
-				case SDLK_ESCAPE: // "Escape" pressed
-					return 0;
-				case SDLK_UP: // "UP" pressed
-					rotatePiece(); break;
-				case SDLK_RIGHT: // "RIGHT" pressed
-					rightDown = true; break;
-				case SDLK_LEFT: // "LEFT" pressed
-					leftDown = true; break;
-				case SDLK_DOWN: // "DOWN" pressed
-					downDown = true; break;
+					switch (event.key.keysym.sym)
+					{
+					case SDLK_RETURN: // "ENTER" pressed
+						titleScreen = false;
+						gameOver = false;
+						beginGame();
+						break;
+					}
 				}
 			}
-			else if (event.type == SDL_KEYUP)
+
+			else
 			{
-				switch (event.key.keysym.sym)
+				// Handle keyboard events
+				if (event.type == SDL_KEYDOWN)
 				{
-				case SDLK_RIGHT: // "RIGHT" released
-					rightDown = false;
-					rightDownTime = 0;
-					break;
-				case SDLK_LEFT: // "LEFT" released
-					leftDown = false;
-					leftDownTime = 0;
-					break;
-				case SDLK_DOWN: // "DOWN" released
-					downDown = false; break;
+					switch (event.key.keysym.sym)
+					{
+					case SDLK_UP: // "UP" pressed
+						rotatePiece(); break;
+					case SDLK_RIGHT: // "RIGHT" pressed
+						rightDown = true; break;
+					case SDLK_LEFT: // "LEFT" pressed
+						leftDown = true; break;
+					case SDLK_DOWN: // "DOWN" pressed
+						downDown = true; break;
+					}
+				}
+				else if (event.type == SDL_KEYUP)
+				{
+					switch (event.key.keysym.sym)
+					{
+					case SDLK_RIGHT: // "RIGHT" released
+						rightDown = false;
+						rightDownTime = 0;
+						break;
+					case SDLK_LEFT: // "LEFT" released
+						leftDown = false;
+						leftDownTime = 0;
+						break;
+					case SDLK_DOWN: // "DOWN" released
+						downDown = false; break;
+					}
 				}
 			}
+
 			// "X" clicked
-			else if (event.type == SDL_QUIT)
+			if (event.type == SDL_QUIT)
 			{
 				return 0;
 			}
@@ -139,14 +171,21 @@ void init()
 {
 	srand(time(NULL));
 
+	// Set window text
+	SDL_WM_SetCaption("Tetris", NULL);
+
+	// Load screen images
+	TITLE_SCREEN = LoadImage("img/title-screen.png");
+	GAME_OVER = LoadImage("img/game-over.png");
+
 	// Load pieces
-	SQUARE_BLUE = LoadSurfaceFromFile("img/blue.png");
-	SQUARE_RED = LoadSurfaceFromFile("img/red.png");
-	SQUARE_GREEN = LoadSurfaceFromFile("img/green.png");
-	SQUARE_YELLOW = LoadSurfaceFromFile("img/yellow.png");
-	SQUARE_CYAN = LoadSurfaceFromFile("img/cyan.png");
-	SQUARE_PURPLE = LoadSurfaceFromFile("img/purple.png");
-	SQUARE_ORANGE = LoadSurfaceFromFile("img/orange.png");
+	SQUARE_BLUE = LoadImage("img/blue.png");
+	SQUARE_RED = LoadImage("img/red.png");
+	SQUARE_GREEN = LoadImage("img/green.png");
+	SQUARE_YELLOW = LoadImage("img/yellow.png");
+	SQUARE_CYAN = LoadImage("img/cyan.png");
+	SQUARE_PURPLE = LoadImage("img/purple.png");
+	SQUARE_ORANGE = LoadImage("img/orange.png");
 
 	// Set border
 	borderInner.x = 200;
@@ -159,27 +198,45 @@ void init()
 	borderOuter.h = borderInner.h + 10 * 2;
 	borderOuter.w = borderInner.w + 10 * 2;
 
+	beginGame();
+}
+
+void beginGame()
+{
+	loadPieceType(nextPiece, rand() % 7 + 1);
+
+	loadNextPiece();
+
 	// Reset arrays
 	memset(grid, 0, sizeof(grid[0][0]) * 200);
 
-	//// Fill grad with random data
-	//for (int y = 0; y < 20; y++)
-	//{
-	//	for (int x = 0; x < 10; x++)
-	//	{
-	//		grid[y][x] = rand() % 7 + 1;
-	//	}
-	//}
+	// Reset variables
+
+	rightDown = false;
+	leftDown = false;
+
+	rightDownTime = 0;
+	leftDownTime = 0;
+
+	downDown = false;
 }
 
-void nextPiece()
+void loadNextPiece()
+{
+	pieceX = 2;
+	pieceY = -1;
+
+	// Copy nextPiece into piece
+	for (int y = 0; y < 4; y++)
+		for (int x = 0; x < 4; x++)
+			piece[y][x] = nextPiece[y][x];
+	
+	loadPieceType(nextPiece, rand() % 7 + 1);
+}
+
+void loadPieceType(int(&piece)[4][4], int color)
 {
 	memset(piece, 0, sizeof(piece[0][0]) * 16);
-
-	int color = rand() % 7 + 1;
-
-	pieceX = 0;
-	pieceY = 0;
 
 	switch (color)
 	{
@@ -335,7 +392,11 @@ void moveY()
 	{
 		pieceY--;
 		projectPiece();
-		nextPiece();
+		clearRows();
+		loadNextPiece();
+		// Next piece immediately collides = Game Over
+		if (collisionDetected())
+			gameOver = true;
 	}
 }
 
@@ -353,49 +414,95 @@ void projectPiece()
 	}
 }
 
+// Clear any full rows
+void clearRows()
+{
+	int clears = 0;
+
+	for (int y = 19; y >= 0; y--)
+	{
+		bool full = true;
+
+		for (int x = 0; x < 10; x++)
+		{
+			if (!grid[y][x])
+			{
+				full = false;
+				break;
+			}
+		}
+
+		if (full)
+		{
+			// Shift everything down
+			for (int y2 = y; y2 > 0; y2--)
+			{
+				for (int x = 0; x < 10; x++)
+				{
+					grid[y2][x] = grid[y2 - 1][x];
+				}
+			}
+			y++;
+		}
+	}
+}
+
 // Handle gravity/graphics/movement
 void update()
 {
-	if (rightDown && !leftDown && !(rightDownTime++ % 300))
-		moveX(1);
-	else if (!rightDown && leftDown && !(leftDownTime++ % 300))
-		moveX(-1);
+	// Clear everything
+	SDL_FillRect(SCREEN, NULL, 0);
 
-	if (downDown)
-		ticks += 14;
-
-	if (++ticks > ticksPerFall)
+	if (titleScreen)
 	{
-		moveY();
-		ticks = 0;
+		drawImage(50, 50, TITLE_SCREEN, SCREEN);
+	}
+	else if (gameOver)
+	{
+		drawImage(50, 50, GAME_OVER, SCREEN);
+	}
+	else
+	{
+		if (rightDown && !leftDown && !(rightDownTime++ % 300))
+			moveX(1);
+		else if (!rightDown && leftDown && !(leftDownTime++ % 300))
+			moveX(-1);
+
+		if (downDown)
+			ticks += 14;
+
+		if (++ticks > ticksPerFall)
+		{
+			moveY();
+			ticks = 0;
+		}
+
+		draw();
 	}
 
-	draw();
-
 	// Refresh the screen
-	SDL_Flip(screen);
+	SDL_Flip(SCREEN);
 }
 
 // graphics "master function"
 void draw()
 {
-	// Clear everything
-	SDL_FillRect(screen, NULL, 0);
-
 	// Draw grid border
-	SDL_FillRect(screen, &borderOuter, SDL_MapRGB(screen->format, 0, 225, 255));
-	SDL_FillRect(screen, &borderInner, 0);
+	SDL_FillRect(SCREEN, &borderOuter, SDL_MapRGB(SCREEN->format, 0, 225, 255));
+	SDL_FillRect(SCREEN, &borderInner, 0);
 
 	// Draw blocks in the grid
 	drawGrid();
 
 	// Draw the piece
-	drawPiece();
+	drawPiece(piece, pieceX, pieceY);
+	drawPiece(nextPiece, 12, 0);
 }
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest)
 {
 	SDL_Rect offset;
+
 	offset.x = x;
 	offset.y = y;
 
@@ -429,12 +536,12 @@ void drawGrid()
 			}
 
 			if (SQUARE_CURRENT != NULL)
-				drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, screen);
+				drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
-void drawPiece()
+void drawPiece(int (&piece)[4][4], int pieceX, int pieceY)
 {
 	for (int y = 0; y < 4; y++)
 	{
@@ -461,12 +568,12 @@ void drawPiece()
 			}
 
 			if (SQUARE_CURRENT != NULL)
-				drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, screen);
+				drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
-SDL_Surface *LoadSurfaceFromFile(string filename)
+SDL_Surface *LoadImage(string filename)
 {
 	SDL_Surface* LoadedImage = NULL;
 	SDL_Surface* OptimizedImage = NULL;

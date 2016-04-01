@@ -61,7 +61,7 @@ void moveY();
 void projectPiece();
 void clearRows();
 
-bool collisionDetected();
+bool collisionDetected(int(&piece)[4][4]);
 
 // Variables (SDL)
 SDL_Event event;
@@ -270,7 +270,6 @@ void loadPieceType(int(&piece)[4][4], int color)
 
 void rotatePiece() {
 	int tempPiece[4][4];
-	int backupPiece[4][4];
 
 	bool firstRowCount = false;
 	bool secondRowCount = false;
@@ -284,11 +283,8 @@ void rotatePiece() {
 			firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
 			secondRowCount = secondRowCount || (x == 1 && piece[y][x] != 0);
 			lastRowCount = lastRowCount || (x == 3 && piece[y][x] != 0);
-
-			backupPiece[y][x] = piece[y][x];
 		}
 	}
-
 	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
 	if (!firstRowCount && (!secondRowCount || lastRowCount)) {
 		for (int y = 1; y < 4; y++) {
@@ -298,31 +294,22 @@ void rotatePiece() {
 			}
 		}
 	}
-
-	// Copy back into piece
-	for (int y = 0; y < 4; y++)
-		for (int x = 0; x < 4; x++)
-			piece[y][x] = tempPiece[y][x];
-
-	// If collision, cancel rotation
-	if (collisionDetected())
+	// If the new piece doesn't collide with anything, copy back into the original
+	if (!collisionDetected(tempPiece))
 		for (int y = 0; y < 4; y++)
 			for (int x = 0; x < 4; x++)
-				piece[y][x] = backupPiece[y][x];
+				piece[y][x] = tempPiece[y][x];
 }
 
-bool collisionDetected() {
+bool collisionDetected(int(&piece)[4][4]) {
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
-			if (!piece[y][x])
+			if (!piece[y][x]) // Empty slot - no need to check anything else this pass
 				continue;
-
 			if (pieceX + x > 9 || pieceX + x < 0) // Horizontal overlap with border
 				return true;
-
 			if (pieceY + y > 19 || pieceY + y < 0) // Vertical overlap with border
 				return true;
-
 			if (grid[y + pieceY][x + pieceX] != 0) // Collision with grid
 				return true;
 		}
@@ -334,21 +321,21 @@ bool collisionDetected() {
 void moveX(int dir) {
 	pieceX += dir;
 
-	if (collisionDetected()) pieceX -= dir; // Invalid move
+	if (collisionDetected(piece)) pieceX -= dir; // Invalid move
 }
 
 // Attempt to apply gravity to the piece
 void moveY() {
 	pieceY++;
 
-	if (collisionDetected())
+	if (collisionDetected(piece))
 	{
 		pieceY--;
 		projectPiece();
 		clearRows();
 		loadNextPiece();
 
-		if (collisionDetected()) gameOver = true; // Next piece immediately collides = Game Over
+		if (collisionDetected(piece)) gameOver = true; // Next piece immediately collides = Game Over
 	}
 }
 

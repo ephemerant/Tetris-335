@@ -46,7 +46,7 @@ These methods combine provide an algorithm that exactly imitates the following i
 
 ![](http://i.imgur.com/IHMO9hD.png)
 
-*--[ColinFahey.com](http://colinfahey.com/tetris/tetris.html)
+*--[ColinFahey.com](http://colinfahey.com/tetris/tetris.html)*
 
 #### Smooth Controls
 

@@ -44,7 +44,7 @@ These methods combine provide an algorithm that exactly imitates the following i
 
 *Note: Clockwise rotations go from right to left in this image*
 
-![](http://i.imgur.com/IHMO9hD.png)
+![](https://i.imgur.com/6AMgXMy.png)
 
 *--[ColinFahey.com](http://colinfahey.com/tetris/tetris.html)*
 

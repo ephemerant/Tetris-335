@@ -38,9 +38,9 @@ The general requirements were:
 
 The general clockwise rotation of a 4x4 zero-indexed grid is a simple transformation of its coordinates (x, y) to (3-y, x).
 
-In order to keep the pieces centered in their grids, if the first row is blank, everything is shifted up by one, unless it's the "O" piece.
+In order to keep the pieces centered in their grids, if the first row is blank and either the second row is blank or the last row is not blank, everything is shifted up by one.
 
-These methods combine provide an algorithm that exactly imitates the following image, except for the "S" and "Z" pieces. These pieces now have 4 states instead of 2, which we may address at a later time.
+These methods combine provide an algorithm that exactly imitates the following image.
 
 *Note: Clockwise rotations go from right to left in this image*
 

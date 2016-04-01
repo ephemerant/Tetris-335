@@ -43,6 +43,8 @@ bool downDown = false;
 void update();
 
 void init();
+
+void gameLoop();
 void beginGame();
 
 void draw();
@@ -85,6 +87,11 @@ SDL_Surface *SQUARE_GREEN;
 SDL_Rect borderOuter;
 SDL_Rect borderInner;
 
+Mix_Music *AUDIO_MAIN;
+
+Mix_Chunk *AUDIO_LINE;
+Mix_Chunk *AUDIO_LAND;
+
 // Protypes (SDL)
 
 SDL_Surface *LoadImage(std::string filename);
@@ -94,11 +101,15 @@ SDL_Surface *LoadImage(std::string filename);
 using namespace std;
 
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{
-	SCREEN = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
-
+{	
 	init();
+	gameLoop();
+	SDL_Quit();
+	return 0;
+}
 
+void gameLoop()
+{
 	while (true)
 	{
 		update();
@@ -159,16 +170,18 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 			// "X" clicked
 			if (event.type == SDL_QUIT)
 			{
-				return 0;
+				return;
 			}
 		}
 	}
-
-	return 0;
 }
 
 void init()
 {
+	SDL_Init(SDL_INIT_EVERYTHING);
+
+	SCREEN = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
+
 	srand(time(NULL));
 
 	// Set window text
@@ -186,6 +199,16 @@ void init()
 	SQUARE_CYAN = LoadImage("img/cyan.png");
 	SQUARE_PURPLE = LoadImage("img/purple.png");
 	SQUARE_ORANGE = LoadImage("img/orange.png");
+
+	// Load audio
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+
+	AUDIO_MAIN = Mix_LoadMUS("audio/Main-Theme.ogg");
+
+	AUDIO_LINE = Mix_LoadWAV("audio/line_clear.wav");
+
+	// Start Music
+	Mix_PlayMusic(AUDIO_MAIN, -1);
 
 	// Set border
 	borderInner.x = 200;
@@ -230,7 +253,7 @@ void loadNextPiece()
 	for (int y = 0; y < 4; y++)
 		for (int x = 0; x < 4; x++)
 			piece[y][x] = nextPiece[y][x];
-	
+
 	loadPieceType(nextPiece, rand() % 7 + 1);
 }
 
@@ -443,8 +466,11 @@ void clearRows()
 				}
 			}
 			y++;
+			clears++;
 		}
 	}
+	if (clears)
+		Mix_PlayChannel(-1, AUDIO_LINE, 0);
 }
 
 // Handle gravity/graphics/movement
@@ -541,7 +567,7 @@ void drawGrid()
 	}
 }
 
-void drawPiece(int (&piece)[4][4], int pieceX, int pieceY)
+void drawPiece(int(&piece)[4][4], int pieceX, int pieceY)
 {
 	for (int y = 0; y < 4; y++)
 	{

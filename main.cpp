@@ -57,7 +57,7 @@ void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
 void loadNextPiece();
 void loadPieceType(int(&piece)[4][4], int color);
 
-void rotatePiece(bool clockwise = true);
+void rotatePiece();
 
 void moveX(int dir);
 void moveY();
@@ -100,29 +100,23 @@ SDL_Surface *LoadImage(std::string filename);
 
 using namespace std;
 
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{	
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	init();
 	gameLoop();
 	SDL_Quit();
 	return 0;
 }
 
-void gameLoop()
-{
-	while (true)
-	{
+void gameLoop() {
+	while (true) {
 		update();
 
-		while (SDL_PollEvent(&event))
-		{
-			if (titleScreen || gameOver)
-			{
-				// Handle keyboard events
-				if (event.type == SDL_KEYDOWN)
-				{
-					switch (event.key.keysym.sym)
-					{
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) // "X" clicked
+				return;
+			else if (titleScreen || gameOver) { // Out-of-game keyboard events
+				if (event.type == SDL_KEYDOWN) {
+					switch (event.key.keysym.sym) {
 					case SDLK_RETURN: // "ENTER" pressed
 						titleScreen = false;
 						gameOver = false;
@@ -131,14 +125,9 @@ void gameLoop()
 					}
 				}
 			}
-
-			else
-			{
-				// Handle keyboard events
-				if (event.type == SDL_KEYDOWN)
-				{
-					switch (event.key.keysym.sym)
-					{
+			else { // In-game keyboard events
+				if (event.type == SDL_KEYDOWN) {
+					switch (event.key.keysym.sym) {
 					case SDLK_UP: // "UP" pressed
 						rotatePiece(); break;
 					case SDLK_RIGHT: // "RIGHT" pressed
@@ -149,10 +138,8 @@ void gameLoop()
 						downDown = true; break;
 					}
 				}
-				else if (event.type == SDL_KEYUP)
-				{
-					switch (event.key.keysym.sym)
-					{
+				else if (event.type == SDL_KEYUP) {
+					switch (event.key.keysym.sym) {
 					case SDLK_RIGHT: // "RIGHT" released
 						rightDown = false;
 						rightDownTime = 0;
@@ -166,18 +153,11 @@ void gameLoop()
 					}
 				}
 			}
-
-			// "X" clicked
-			if (event.type == SDL_QUIT)
-			{
-				return;
-			}
 		}
 	}
 }
 
-void init()
-{
+void init() {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	SCREEN = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
@@ -224,8 +204,7 @@ void init()
 	beginGame();
 }
 
-void beginGame()
-{
+void beginGame() {
 	loadPieceType(nextPiece, rand() % 7 + 1);
 
 	loadNextPiece();
@@ -244,13 +223,11 @@ void beginGame()
 	downDown = false;
 }
 
-void loadNextPiece()
-{
+void loadNextPiece() {
 	pieceX = 2;
 	pieceY = -1;
 
-	// Copy nextPiece into piece
-	for (int y = 0; y < 4; y++)
+	for (int y = 0; y < 4; y++) // Copy nextPiece into piece
 		for (int x = 0; x < 4; x++)
 			piece[y][x] = nextPiece[y][x];
 
@@ -259,91 +236,68 @@ void loadNextPiece()
 
 void loadPieceType(int(&piece)[4][4], int color)
 {
-	memset(piece, 0, sizeof(piece[0][0]) * 16);
-
-	switch (color)
-	{
+	memset(piece, 0, sizeof(piece[0][0]) * 16); // Clear out piece
+	switch (color) {
 	case 1: // J
 		piece[1][1] = color;
 		piece[1][2] = color;
 		piece[1][3] = color;
-		piece[2][3] = color;
-		break;
+		piece[2][3] = color; break;
 	case 2: // Z
 		piece[1][1] = color;
 		piece[1][2] = color;
 		piece[2][2] = color;
-		piece[2][3] = color;
-		break;
+		piece[2][3] = color; break;
 	case 3: // S		
 		piece[1][2] = color;
 		piece[1][3] = color;
 		piece[2][1] = color;
-		piece[2][2] = color;
-		break;
+		piece[2][2] = color; break;
 	case 4: // I
 		piece[1][0] = color;
 		piece[1][1] = color;
 		piece[1][2] = color;
-		piece[1][3] = color;
-		break;
+		piece[1][3] = color; break;
 	case 5: // T		
 		piece[1][1] = color;
 		piece[1][2] = color;
 		piece[1][3] = color;
-		piece[2][2] = color;
-		break;
+		piece[2][2] = color; break;
 	case 6: // O
 		piece[1][1] = color;
 		piece[1][2] = color;
 		piece[2][1] = color;
-		piece[2][2] = color;
-		break;
+		piece[2][2] = color; break;
 	case 7: // L
 		piece[1][1] = color;
 		piece[1][2] = color;
 		piece[1][3] = color;
-		piece[2][1] = color;
-		break;
+		piece[2][1] = color; break;
 	}
 }
 
-void rotatePiece(bool clockwise)
-{
-	// O (i.e. the "square") will never be rotated
-	if (piece[1][1] == 6) return;
+void rotatePiece() {
+	if (piece[1][1] == 6) return; // O (i.e. the "square") will never be rotated
 
 	int tempPiece[4][4];
 	int backupPiece[4][4];
 
 	bool firstRowCount = false;
 
-	// Simple rotation
-	for (int y = 0; y < 4; y++)
-	{
-		for (int x = 0; x < 4; x++)
-		{
-			if (clockwise)
-			{
-				tempPiece[x][3 - y] = piece[y][x];
-				firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
-			}
-			else
-			{
-				tempPiece[y][x] = piece[x][3 - y];
-				firstRowCount = firstRowCount || (y == 0 && tempPiece[y][x] != 0);
-			}
+	// Simple clockwise rotation
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			tempPiece[x][3 - y] = piece[y][x];
+			firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
+
 			backupPiece[y][x] = piece[y][x];
 		}
 	}
 
 	// If first row of the piece is empty, shift everything up by one
-	if (!firstRowCount)
-	{
-		for (int y = 1; y < 4; y++)
-		{
-			for (int x = 0; x < 4; x++)
-			{
+	if (!firstRowCount) {
+		for (int y = 1; y < 4; y++) {
+			for (int x = 0; x < 4; x++) {
 				tempPiece[y - 1][x] = tempPiece[y][x];
 				tempPiece[y][x] = 0;
 			}
@@ -352,45 +306,29 @@ void rotatePiece(bool clockwise)
 
 	// Copy back into piece
 	for (int y = 0; y < 4; y++)
-	{
 		for (int x = 0; x < 4; x++)
-		{
 			piece[y][x] = tempPiece[y][x];
-		}
-	}
 
 	// If collision, cancel rotation
 	if (collisionDetected())
-	{
 		for (int y = 0; y < 4; y++)
-		{
 			for (int x = 0; x < 4; x++)
-			{
 				piece[y][x] = backupPiece[y][x];
-			}
-		}
-	}
 }
 
-bool collisionDetected()
-{
-	for (int y = 0; y < 4; y++)
-	{
-		for (int x = 0; x < 4; x++)
-		{
+bool collisionDetected() {
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
 			if (!piece[y][x])
 				continue;
-
-			// Horizontal overlap with border
-			if (pieceX + x > 9 || pieceX + x < 0)
+						
+			if (pieceX + x > 9 || pieceX + x < 0) // Horizontal overlap with border
 				return true;
-
-			// Vertical overlap with border
-			if (pieceY + y > 19 || pieceY + y < 0)
+						
+			if (pieceY + y > 19 || pieceY + y < 0) // Vertical overlap with border
 				return true;
-
-			// Collision with grid
-			if (grid[y + pieceY][x + pieceX] != 0)
+						
+			if (grid[y + pieceY][x + pieceX] != 0) // Collision with grid
 				return true;
 		}
 	}
@@ -398,17 +336,14 @@ bool collisionDetected()
 }
 
 // Attempt to move the piece left or right
-void moveX(int dir)
-{
+void moveX(int dir) {
 	pieceX += dir;
 
-	if (collisionDetected())
-		pieceX -= dir;
+	if (collisionDetected()) pieceX -= dir; // Invalid move
 }
 
 // Attempt to apply gravity to the piece
-void moveY()
-{
+void moveY() {
 	pieceY++;
 
 	if (collisionDetected())
@@ -417,78 +352,55 @@ void moveY()
 		projectPiece();
 		clearRows();
 		loadNextPiece();
-		// Next piece immediately collides = Game Over
-		if (collisionDetected())
-			gameOver = true;
+
+		if (collisionDetected()) gameOver = true; // Next piece immediately collides = Game Over
 	}
 }
 
 // Project the piece onto the grid
-void projectPiece()
-{
+void projectPiece() {
 	for (int y = 0; y < 4; y++)
-	{
 		for (int x = 0; x < 4; x++)
-		{
-			// Overwrite blank squares
-			if (!grid[y + pieceY][x + pieceX])
+			if (!grid[y + pieceY][x + pieceX]) // Overwrite blank squares only
 				grid[y + pieceY][x + pieceX] = piece[y][x];
-		}
-	}
 }
 
 // Clear any full rows
-void clearRows()
-{
+void clearRows() {
 	int clears = 0;
 
-	for (int y = 19; y >= 0; y--)
-	{
+	for (int y = 19; y >= 0; y--) {
 		bool full = true;
 
-		for (int x = 0; x < 10; x++)
-		{
-			if (!grid[y][x])
-			{
+		for (int x = 0; x < 10; x++) {
+			if (!grid[y][x]) {
 				full = false;
 				break;
 			}
 		}
 
-		if (full)
-		{
-			// Shift everything down
+		if (full) { // Shift everything down
 			for (int y2 = y; y2 > 0; y2--)
-			{
 				for (int x = 0; x < 10; x++)
-				{
 					grid[y2][x] = grid[y2 - 1][x];
-				}
-			}
+
 			y++;
 			clears++;
 		}
 	}
-	if (clears)
-		Mix_PlayChannel(-1, AUDIO_LINE, 0);
+	if (clears) Mix_PlayChannel(-1, AUDIO_LINE, 0);
 }
 
 // Handle gravity/graphics/movement
-void update()
-{
+void update() {
 	// Clear everything
 	SDL_FillRect(SCREEN, NULL, 0);
 
 	if (titleScreen)
-	{
 		drawImage(50, 50, TITLE_SCREEN, SCREEN);
-	}
 	else if (gameOver)
-	{
 		drawImage(50, 50, GAME_OVER, SCREEN);
-	}
-	else
-	{
+	else {
 		if (rightDown && !leftDown && !(rightDownTime++ % 300))
 			moveX(1);
 		else if (!rightDown && leftDown && !(leftDownTime++ % 300))
@@ -496,13 +408,10 @@ void update()
 
 		if (downDown)
 			ticks += 14;
-
-		if (++ticks > ticksPerFall)
-		{
+		if (++ticks > ticksPerFall) {
 			moveY();
 			ticks = 0;
 		}
-
 		draw();
 	}
 
@@ -511,8 +420,7 @@ void update()
 }
 
 // graphics "master function"
-void draw()
-{
+void draw() {
 	// Draw grid border
 	SDL_FillRect(SCREEN, &borderOuter, SDL_MapRGB(SCREEN->format, 0, 225, 255));
 	SDL_FillRect(SCREEN, &borderInner, 0);
@@ -520,13 +428,12 @@ void draw()
 	// Draw blocks in the grid
 	drawGrid();
 
-	// Draw the piece
+	// Draw the pieces
 	drawPiece(piece, pieceX, pieceY);
 	drawPiece(nextPiece, 12, 0);
 }
 
-void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest)
-{
+void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest) {
 	SDL_Rect offset;
 
 	offset.x = x;
@@ -535,79 +442,54 @@ void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest)
 	SDL_BlitSurface(src, NULL, dest, &offset);
 }
 
-void drawGrid()
-{
-	for (int y = 0; y < 20; y++)
-	{
-		for (int x = 0; x < 10; x++)
-		{
+void drawGrid() {
+	for (int y = 0; y < 20; y++) {
+		for (int x = 0; x < 10; x++) {
 			SDL_Surface *SQUARE_CURRENT = NULL;
 
 			switch (grid[y][x])
 			{
-			case 1:
-				SQUARE_CURRENT = SQUARE_BLUE; break;
-			case 2:
-				SQUARE_CURRENT = SQUARE_RED; break;
-			case 3:
-				SQUARE_CURRENT = SQUARE_GREEN; break;
-			case 4:
-				SQUARE_CURRENT = SQUARE_CYAN; break;
-			case 5:
-				SQUARE_CURRENT = SQUARE_PURPLE; break;
-			case 6:
-				SQUARE_CURRENT = SQUARE_YELLOW; break;
-			case 7:
-				SQUARE_CURRENT = SQUARE_ORANGE; break;
+			case 1: SQUARE_CURRENT = SQUARE_BLUE; break;
+			case 2: SQUARE_CURRENT = SQUARE_RED; break;
+			case 3: SQUARE_CURRENT = SQUARE_GREEN; break;
+			case 4: SQUARE_CURRENT = SQUARE_CYAN; break;
+			case 5: SQUARE_CURRENT = SQUARE_PURPLE; break;
+			case 6: SQUARE_CURRENT = SQUARE_YELLOW; break;
+			case 7: SQUARE_CURRENT = SQUARE_ORANGE; break;
 			}
 
-			if (SQUARE_CURRENT != NULL)
-				drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
+			if (SQUARE_CURRENT != NULL) drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
-void drawPiece(int(&piece)[4][4], int pieceX, int pieceY)
-{
-	for (int y = 0; y < 4; y++)
-	{
-		for (int x = 0; x < 4; x++)
-		{
+void drawPiece(int(&piece)[4][4], int pieceX, int pieceY) {
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
 			SDL_Surface *SQUARE_CURRENT = NULL;
 
-			switch (piece[y][x])
-			{
-			case 1:
-				SQUARE_CURRENT = SQUARE_BLUE; break;
-			case 2:
-				SQUARE_CURRENT = SQUARE_RED; break;
-			case 3:
-				SQUARE_CURRENT = SQUARE_GREEN; break;
-			case 4:
-				SQUARE_CURRENT = SQUARE_CYAN; break;
-			case 5:
-				SQUARE_CURRENT = SQUARE_PURPLE; break;
-			case 6:
-				SQUARE_CURRENT = SQUARE_YELLOW; break;
-			case 7:
-				SQUARE_CURRENT = SQUARE_ORANGE; break;
+			switch (piece[y][x]) {
+			case 1: SQUARE_CURRENT = SQUARE_BLUE; break;
+			case 2: SQUARE_CURRENT = SQUARE_RED; break;
+			case 3: SQUARE_CURRENT = SQUARE_GREEN; break;
+			case 4: SQUARE_CURRENT = SQUARE_CYAN; break;
+			case 5: SQUARE_CURRENT = SQUARE_PURPLE; break;
+			case 6: SQUARE_CURRENT = SQUARE_YELLOW; break;
+			case 7: SQUARE_CURRENT = SQUARE_ORANGE; break;
 			}
 
-			if (SQUARE_CURRENT != NULL)
-				drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
+			if (SQUARE_CURRENT != NULL) drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
-SDL_Surface *LoadImage(string filename)
-{
+SDL_Surface *LoadImage(string filename) {
 	SDL_Surface* LoadedImage = NULL;
 	SDL_Surface* OptimizedImage = NULL;
 
 	LoadedImage = IMG_Load(filename.c_str());
 
-	if (LoadedImage != NULL)
-	{
+	if (LoadedImage != NULL) {
 		OptimizedImage = SDL_DisplayFormat(LoadedImage);
 		SDL_FreeSurface(LoadedImage);
 	}

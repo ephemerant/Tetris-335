@@ -42,9 +42,9 @@ In order to keep the pieces centered in their grids, if the first row is blank a
 
 These methods combine to provide an algorithm that exactly follows the following image:
 
-![](https://raw.githubusercontent.com/ephemerant/Tetris-335/master/img/when-to-shift.png)
+![](https://raw.githubusercontent.com/ephemerant/Tetris-335/master/img/shift-when.png)
 
-*--Graphic by Clayton McGuire
+*--Graphic by Clayton McGuire*
 
 #### Smooth Controls
 

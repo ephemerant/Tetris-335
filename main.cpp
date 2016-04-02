@@ -29,14 +29,13 @@ int pieceY;
 
 bool rightDown = false;
 bool leftDown = false;
+bool downDown = false;
 
 bool titleScreen = true;
 bool gameOver = false;
 
 int rightDownTime = 0;
 int leftDownTime = 0;
-
-bool downDown = false;
 
 // Prototypes
 void update();
@@ -47,12 +46,10 @@ void gameLoop();
 void beginGame();
 
 void draw();
-
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
 void drawGrid();
 void drawGridLines();
 void drawText();
-
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
 
 void loadNextPiece();
@@ -190,7 +187,7 @@ void init() {
 	// Load audio
 	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
 
-	AUDIO_MAIN = Mix_LoadMUS("audio/Main-Theme.ogg");
+	AUDIO_MAIN = Mix_LoadMUS("audio/main_theme.wav");
 
 	AUDIO_LINE = Mix_LoadWAV("audio/line_clear.wav");
 

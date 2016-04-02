@@ -14,8 +14,10 @@
 extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 
 // Variables
-int ticks = 0;
-const int ticksPerFall = 900;
+const int framesPerFall = 15;
+const int framesPerSecond = 60;
+
+int frames = 0;
 
 int score;
 
@@ -117,6 +119,8 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
 void gameLoop() {
 	while (true) {
+		int ticks = SDL_GetTicks();
+
 		update();
 
 		while (SDL_PollEvent(&event)) {
@@ -162,6 +166,10 @@ void gameLoop() {
 				}
 			}
 		}
+
+		// Cap FPS
+		if (SDL_GetTicks() - ticks < 1000 / framesPerSecond)
+			SDL_Delay(1000 / framesPerSecond - (SDL_GetTicks() - ticks));
 	}
 }
 
@@ -411,16 +419,16 @@ void update() {
 	else if (gameOver)
 		drawImage(50, 50, GAME_OVER, SCREEN);
 	else {
-		if (rightDown && !leftDown && !(rightDownTime++ % 300))
+		if (rightDown && !leftDown && !(rightDownTime++ % 6)) // Move right every 6 frames if right is held
 			moveX(1);
-		else if (!rightDown && leftDown && !(leftDownTime++ % 300))
+		else if (!rightDown && leftDown && !(leftDownTime++ % 6))
 			moveX(-1);
 
 		if (downDown)
-			ticks += 14;
-		if (++ticks > ticksPerFall) {
+			frames += 8;
+		if (++frames > framesPerFall) {
 			moveY();
-			ticks = 0;
+			frames = 0;
 		}
 		draw();
 	}

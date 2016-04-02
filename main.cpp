@@ -39,10 +39,6 @@ int leftDownTime = 0;
 
 // Prototypes
 void update();
-
-void init();
-
-void gameLoop();
 void beginGame();
 
 void draw();
@@ -99,14 +95,23 @@ SDL_Color COLOR_WHITE = { 255, 255, 255 };
 // Protypes (SDL)
 SDL_Surface *LoadImage(std::string filename);
 
+extern "C"
+{
+	// Import
+	void MainCallback();
+	// Export
+	void init();
+	void gameLoop();
+	void TTF_Quit();
+	void SDL_Quit();
+}
+
 // Main
 using namespace std;
 
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	init();
-	gameLoop();
-	TTF_Quit();
-	SDL_Quit();
+	// Pass the baton to the Assembly code
+	MainCallback();
 	return 0;
 }
 
@@ -204,13 +209,13 @@ void init() {
 	borderOuter.y = borderInner.y - 5;
 	borderOuter.h = borderInner.h + 5 * 2;
 	borderOuter.w = borderInner.w + 5 * 2;
-		
+
 	// Load font
 	FONT_UBUNTU_MONO_BOLD = TTF_OpenFont("font/UbuntuMono-Bold.ttf", 24);
 	LABEL_SCORE = TTF_RenderText_Solid(FONT_UBUNTU_MONO_BOLD, "Score:", COLOR_WHITE);
-	
+
 	textBox.x = borderOuter.x + borderOuter.w + 20;
-	textBox.y = borderOuter.y + borderOuter.h - 40;			
+	textBox.y = borderOuter.y + borderOuter.h - 40;
 
 	textBoxScore.x = textBox.x + 80;
 	textBoxScore.y = textBox.y;
@@ -444,7 +449,7 @@ void draw() {
 }
 
 void drawText()
-{		
+{
 	SCORE = TTF_RenderText_Solid(FONT_UBUNTU_MONO_BOLD, to_string(score).c_str(), COLOR_WHITE);
 
 	SDL_BlitSurface(SCORE, NULL, SCREEN, &textBoxScore);

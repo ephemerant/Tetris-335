@@ -198,7 +198,7 @@ void init() {
 	SQUARE_ORANGE = LoadImage("img/orange.png");
 
 	// Load audio
-	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+	Mix_OpenAudio(11025, MIX_DEFAULT_FORMAT, 2, 1024);
 
 	AUDIO_MAIN = Mix_LoadMUS("audio/main_theme.wav");
 

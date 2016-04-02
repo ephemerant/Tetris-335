@@ -9,12 +9,15 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_mixer.h"
+#include "SDL/SDL_ttf.h"
 
 extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 
 // Variables
 int ticks = 0;
-const int ticksPerFall = 1000;
+const int ticksPerFall = 900;
+
+int score;
 
 int grid[20][10];
 
@@ -47,6 +50,8 @@ void draw();
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
 void drawGrid();
+void drawGridLines();
+void drawText();
 
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
 
@@ -70,6 +75,8 @@ SDL_Surface *SCREEN;
 
 SDL_Surface *TITLE_SCREEN;
 SDL_Surface *GAME_OVER;
+SDL_Surface *SCORE;
+SDL_Surface *LABEL_SCORE;
 
 SDL_Surface *SQUARE_BLUE;
 SDL_Surface *SQUARE_CYAN;
@@ -81,10 +88,16 @@ SDL_Surface *SQUARE_GREEN;
 
 SDL_Rect borderOuter;
 SDL_Rect borderInner;
+SDL_Rect square;
+SDL_Rect textBox;
+SDL_Rect textBoxScore;
 
 Mix_Music *AUDIO_MAIN;
-
 Mix_Chunk *AUDIO_LINE;
+
+TTF_Font *FONT_UBUNTU_MONO_BOLD;
+
+SDL_Color COLOR_WHITE = { 255, 255, 255 };
 
 // Protypes (SDL)
 SDL_Surface *LoadImage(std::string filename);
@@ -95,6 +108,7 @@ using namespace std;
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	init();
 	gameLoop();
+	TTF_Quit();
 	SDL_Quit();
 	return 0;
 }
@@ -151,6 +165,7 @@ void gameLoop() {
 
 void init() {
 	SDL_Init(SDL_INIT_EVERYTHING);
+	TTF_Init();
 
 	SCREEN = SDL_SetVideoMode(600, 600, 32, SDL_SWSURFACE);
 
@@ -188,10 +203,20 @@ void init() {
 	borderInner.h = 400;
 	borderInner.w = 200;
 
-	borderOuter.x = borderInner.x - 10;
-	borderOuter.y = borderInner.y - 10;
-	borderOuter.h = borderInner.h + 10 * 2;
-	borderOuter.w = borderInner.w + 10 * 2;
+	borderOuter.x = borderInner.x - 5;
+	borderOuter.y = borderInner.y - 5;
+	borderOuter.h = borderInner.h + 5 * 2;
+	borderOuter.w = borderInner.w + 5 * 2;
+		
+	// Load font
+	FONT_UBUNTU_MONO_BOLD = TTF_OpenFont("font/UbuntuMono-Bold.ttf", 24);
+	LABEL_SCORE = TTF_RenderText_Solid(FONT_UBUNTU_MONO_BOLD, "Score:", COLOR_WHITE);
+	
+	textBox.x = borderOuter.x + borderOuter.w + 20;
+	textBox.y = borderOuter.y + borderOuter.h - 40;			
+
+	textBoxScore.x = textBox.x + 80;
+	textBoxScore.y = textBox.y;
 
 	beginGame();
 }
@@ -205,14 +230,14 @@ void beginGame() {
 	memset(grid, 0, sizeof(grid[0][0]) * 200);
 
 	// Reset variables
+	score = 0;
 
+	downDown = false;
 	rightDown = false;
 	leftDown = false;
 
 	rightDownTime = 0;
 	leftDownTime = 0;
-
-	downDown = false;
 }
 
 void loadNextPiece() {
@@ -371,6 +396,7 @@ void clearRows() {
 		}
 	}
 	if (clears) Mix_PlayChannel(-1, AUDIO_LINE, 0);
+	score += clears * clears * 10;
 }
 
 // Handle gravity/graphics/movement
@@ -404,8 +430,10 @@ void update() {
 // graphics "master function"
 void draw() {
 	// Draw grid border
-	SDL_FillRect(SCREEN, &borderOuter, SDL_MapRGB(SCREEN->format, 0, 225, 255));
-	SDL_FillRect(SCREEN, &borderInner, 0);
+	SDL_FillRect(SCREEN, &borderOuter, SDL_MapRGB(SCREEN->format, 0, 170, 220));
+	SDL_FillRect(SCREEN, &borderInner, SDL_MapRGB(SCREEN->format, 0, 75, 100));
+
+	drawGridLines();
 
 	// Draw blocks in the grid
 	drawGrid();
@@ -413,6 +441,34 @@ void draw() {
 	// Draw the pieces
 	drawPiece(piece, pieceX, pieceY);
 	drawPiece(nextPiece, 12, 0);
+
+	// Draw on-screen text
+	drawText();
+}
+
+void drawText()
+{		
+	SCORE = TTF_RenderText_Solid(FONT_UBUNTU_MONO_BOLD, to_string(score).c_str(), COLOR_WHITE);
+
+	SDL_BlitSurface(SCORE, NULL, SCREEN, &textBoxScore);
+	SDL_BlitSurface(LABEL_SCORE, NULL, SCREEN, &textBox);
+
+	SDL_FreeSurface(SCORE); // Dispose of SCORE, otherwise we'll have a memory leak
+}
+
+void drawGridLines()
+{
+	for (int y = 0; y < 20; y++) {
+		for (int x = 0; x < 10; x++) {
+			square.w = 19;
+			square.h = 19;
+
+			square.x = x * 20 + borderInner.x;
+			square.y = y * 20 + borderInner.y;
+
+			SDL_FillRect(SCREEN, &square, SDL_MapRGB(SCREEN->format, 0, 10, 30));
+		}
+	}
 }
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest) {

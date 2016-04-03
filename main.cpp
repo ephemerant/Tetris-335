@@ -103,6 +103,8 @@ extern "C"
 	void _MainCallback();
 	int _LoadPieceType(int(&piece)[4][4], int color);
 	int _ClearRows(int(&grid)[20][10]);
+	bool _CollisionDetected(int(&piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
+	void _ProjectPiece(int(*piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
 	// Export
 	void init();
 	void gameLoop();
@@ -304,19 +306,7 @@ void rotatePiece() {
 }
 
 bool collisionDetected(int(&piece)[4][4]) {
-	for (int y = 0; y < 4; y++) {
-		for (int x = 0; x < 4; x++) {
-			if (!piece[y][x]) // Empty slot - no need to check anything else this pass
-				continue;
-			if (pieceX + x > 9 || pieceX + x < 0) // Horizontal overlap with border
-				return true;
-			if (pieceY + y > 19 || pieceY + y < 0) // Vertical overlap with border
-				return true;
-			if (grid[y + pieceY][x + pieceX] != 0) // Collision with grid
-				return true;
-		}
-	}
-	return false;
+	return _CollisionDetected(piece, &grid, pieceX, pieceY);
 }
 
 // Attempt to move the piece left or right
@@ -343,10 +333,7 @@ void moveY() {
 
 // Project the piece onto the grid
 void projectPiece() {
-	for (int y = 0; y < 4; y++)
-		for (int x = 0; x < 4; x++)
-			if (!grid[y + pieceY][x + pieceX]) // Overwrite blank squares only
-				grid[y + pieceY][x + pieceX] = piece[y][x];
+	_ProjectPiece(&piece, &grid, pieceX, pieceY);
 }
 
 // Clear any full rows

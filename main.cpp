@@ -100,7 +100,9 @@ SDL_Surface *LoadImage(std::string filename);
 extern "C"
 {
 	// Import
-	void MainCallback();
+	void _MainCallback();
+	int _LoadPieceType(int(&piece)[4][4], int color);
+	int _ClearRows(int(&grid)[20][10]);
 	// Export
 	void init();
 	void gameLoop();
@@ -113,7 +115,7 @@ using namespace std;
 
 int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 	// Pass the baton to the Assembly code
-	MainCallback();
+	_MainCallback();
 	return 0;
 }
 
@@ -264,43 +266,8 @@ void loadNextPiece() {
 void loadPieceType(int(&piece)[4][4], int color)
 {
 	memset(piece, 0, sizeof(piece[0][0]) * 16); // Clear out piece
-	switch (color) {
-	case 1: // J
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[1][3] = color;
-		piece[2][3] = color; break;
-	case 2: // Z
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[2][2] = color;
-		piece[2][3] = color; break;
-	case 3: // S		
-		piece[1][2] = color;
-		piece[1][3] = color;
-		piece[2][1] = color;
-		piece[2][2] = color; break;
-	case 4: // I
-		piece[1][0] = color;
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[1][3] = color; break;
-	case 5: // T		
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[1][3] = color;
-		piece[2][2] = color; break;
-	case 6: // O
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[2][1] = color;
-		piece[2][2] = color; break;
-	case 7: // L
-		piece[1][1] = color;
-		piece[1][2] = color;
-		piece[1][3] = color;
-		piece[2][1] = color; break;
-	}
+
+	_LoadPieceType(piece, color);
 }
 
 void rotatePiece() {
@@ -384,29 +351,12 @@ void projectPiece() {
 
 // Clear any full rows
 void clearRows() {
-	int clears = 0;
+	int clears = _ClearRows(grid);
 
-	for (int y = 19; y >= 0; y--) {
-		bool full = true;
-
-		for (int x = 0; x < 10; x++) {
-			if (!grid[y][x]) {
-				full = false;
-				break;
-			}
-		}
-
-		if (full) { // Shift everything down
-			for (int y2 = y; y2 > 0; y2--)
-				for (int x = 0; x < 10; x++)
-					grid[y2][x] = grid[y2 - 1][x];
-
-			y++;
-			clears++;
-		}
+	if (clears) {
+		Mix_PlayChannel(-1, AUDIO_LINE, 0);
+		score += clears * clears * 10;
 	}
-	if (clears) Mix_PlayChannel(-1, AUDIO_LINE, 0);
-	score += clears * clears * 10;
 }
 
 // Handle gravity/graphics/movement

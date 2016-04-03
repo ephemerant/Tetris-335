@@ -50,6 +50,16 @@ These methods combine to provide an algorithm that exactly follows the following
 
 ## Future Work
 
+#### Likely to add:
+
+* Full screen
+* Gamepad support
+* Level progression
+
+#### Would like to add, but not likely:
+
+* AI that can play for you
+
 ## Conclusions
 
 ## User Manual

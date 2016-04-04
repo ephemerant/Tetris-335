@@ -39,6 +39,152 @@ _GetValueAt PROC, grid:PTR DWORD, x:DWORD, y:DWORD, w:DWORD
 	ret
 _GetValueAt ENDP
 
+; Shift everything in A up by one, discarding the first row
+_ShiftUp PROC, A:PTR DWORD
+	mov ebx, 1			; y
+	@@FORY:
+		cmp ebx, 4
+		jb @@LOOPY
+		jmp @@ENDFORY
+	@@LOOPY:
+		mov ecx, 0		; x
+		@@FORX:
+			cmp ecx, 4
+			jb @@LOOPX
+			jmp @@ENDFORX
+		@@LOOPX:
+			mov eax, ebx
+			sub eax, 1
+			mov edx, 4
+			mul edx
+
+			add eax, ecx
+			mov edx, 4
+			mul edx
+
+			add eax, A	; Get the address of the calculated position
+
+			invoke _GetValueAt, A, ecx, ebx, 4
+			mov [eax], edx	; A[y-1][x] = A[y][x];
+
+			add eax, 16
+			mov edx, 0
+			mov [eax], edx	; Clear out the square
+
+			inc ecx
+			jmp @@FORX
+		@@ENDFORX:
+
+		inc ebx
+		jmp @@FORY
+	@@ENDFORY:	
+	ret
+_ShiftUp ENDP
+
+; Rotate A into B
+_RotateClockwise PROC, A:PTR DWORD, B:PTR DWORD
+	mov esi, 0			; bit flags representing empty rows
+
+	mov ebx, 0			; y
+	@@FORY:
+		cmp ebx, 4
+		jb @@LOOPY
+		jmp @@ENDFORY
+	@@LOOPY:
+		mov ecx, 0		; x
+		@@FORX:
+			cmp ecx, 4
+			jb @@LOOPX
+			jmp @@ENDFORX
+		@@LOOPX:
+			mov eax, ecx
+			mov edx, 4
+			mul edx
+
+			mov edx, 3
+			sub edx, ebx
+
+			add eax, edx
+			mov edx, 4
+			mul edx
+
+			add eax, B		; End up with B[x][3-y], the rotated position
+
+			invoke _GetValueAt, A, ecx, ebx, 4
+			mov [eax], edx	; B[x][3-y] = A[y][x]
+
+			@@IFVALUE:
+				cmp edx, 0
+				jne @@THENVALUE
+				jmp @@ENDIFVALUE
+			@@THENVALUE:
+				@@SWITCHX:
+					cmp ecx, 0
+					je @@FIRST
+					cmp ecx, 1
+					je @@SECOND
+					cmp ecx, 3
+					je @@LAST
+					jmp @@ENDSWITCHx
+				@@FIRST:
+					or esi, 1
+					jmp @@ENDSWITCHx
+				@@SECOND:
+					or esi, 2
+					jmp @@ENDSWITCHx
+				@@LAST:
+					or esi, 4
+				@@ENDSWITCHX:
+			@@ENDIFVALUE:
+
+			inc ecx
+			jmp @@FORX
+		@@ENDFORX:
+
+		inc ebx
+		jmp @@FORY
+	@@ENDFORY:	
+	mov eax, esi
+	ret
+_RotateClockwise ENDP
+
+; Copy A into B
+_CopyPiece PROC, A:PTR DWORD, B:PTR DWORD
+	mov ebx, 0			; y
+	@@FORY:
+		cmp ebx, 4
+		jb @@LOOPY
+		jmp @@ENDFORY
+	@@LOOPY:
+		mov ecx, 0		; x
+		@@FORX:
+			cmp ecx, 4
+			jb @@LOOPX
+			jmp @@ENDFORX
+		@@LOOPX:
+			mov eax, ebx
+			mov edx, 4
+			mul edx
+
+			add eax, ecx
+			mov edx, 4
+			mul edx
+
+			add eax, B	; Get the address of the calculated position
+
+			invoke _GetValueAt, A, ecx, ebx, 4
+			mov [eax], edx	; Copy the square into its calculated position
+
+			inc ecx
+			jmp @@FORX
+		@@ENDFORX:
+
+		inc ebx
+		jmp @@FORY
+	@@ENDFORY:	
+	ret
+_CopyPiece ENDP
+
 ; Project the piece onto the grid
 _ProjectPiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD		
 	mov ebx, 0			; y
@@ -85,8 +231,7 @@ _ProjectPiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
 
 		inc ebx
 		jmp @@FORY
-	@@ENDFORY:
-	
+	@@ENDFORY:	
 	ret
 _ProjectPiece ENDP
 
@@ -145,8 +290,7 @@ _CollisionDetected PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:D
 
 		inc ebx
 		jmp @@FORY
-	@@ENDFORY:
-	
+	@@ENDFORY:	
 	ret
 _CollisionDetected ENDP
 
@@ -229,9 +373,7 @@ _ClearRows PROC, grid:PTR DWORD
 		dec ebx
 		jmp @@FORY
 	@@ENDFORY:
-
 	mov eax, esi
-
 	ret
 _ClearRows ENDP
 
@@ -298,7 +440,6 @@ _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
 			mov [eax + 16*1 + 4*3], ebx
 			mov [eax + 16*2 + 4*1], ebx
 	@@ENDSWITCH:	
-
 	ret
 _LoadPieceType ENDP
 

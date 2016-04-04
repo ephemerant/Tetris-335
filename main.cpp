@@ -105,6 +105,9 @@ extern "C"
 	int _ClearRows(int(&grid)[20][10]);
 	bool _CollisionDetected(int(&piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
 	void _ProjectPiece(int(*piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
+	void _CopyPiece(int(*A)[4][4], int(*B)[4][4]);
+	int _RotateClockwise(int(*A)[4][4], int(*B)[4][4]);
+	void _ShiftUp(int(*A)[4][4]);
 	// Export
 	void init();
 	void gameLoop();
@@ -258,9 +261,7 @@ void loadNextPiece() {
 	pieceX = 2;
 	pieceY = -1;
 
-	for (int y = 0; y < 4; y++) // Copy nextPiece into piece
-		for (int x = 0; x < 4; x++)
-			piece[y][x] = nextPiece[y][x];
+	_CopyPiece(&nextPiece, &piece); // Copy nextPiece into piece
 
 	loadPieceType(nextPiece, rand() % 7 + 1);
 }
@@ -275,34 +276,15 @@ void loadPieceType(int(&piece)[4][4], int color)
 void rotatePiece() {
 	int tempPiece[4][4];
 
-	bool firstRowCount = false;
-	bool secondRowCount = false;
-	bool lastRowCount = false;
-
-	// Simple clockwise rotation
-	for (int y = 0; y < 4; y++) {
-		for (int x = 0; x < 4; x++) {
-			tempPiece[x][3 - y] = piece[y][x];
-
-			firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
-			secondRowCount = secondRowCount || (x == 1 && piece[y][x] != 0);
-			lastRowCount = lastRowCount || (x == 3 && piece[y][x] != 0);
-		}
-	}
+	int rowCounts = _RotateClockwise(&piece, &tempPiece);
+	
 	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
-	if (!firstRowCount && (!secondRowCount || lastRowCount)) {
-		for (int y = 1; y < 4; y++) {
-			for (int x = 0; x < 4; x++) {
-				tempPiece[y - 1][x] = tempPiece[y][x];
-				tempPiece[y][x] = 0;
-			}
-		}
-	}
+	if (!(rowCounts & 1) && (!(rowCounts & 2) || (rowCounts & 4)))
+		_ShiftUp(&tempPiece);
+
 	// If the new piece doesn't collide with anything, copy back into the original
 	if (!collisionDetected(tempPiece))
-		for (int y = 0; y < 4; y++)
-			for (int x = 0; x < 4; x++)
-				piece[y][x] = tempPiece[y][x];
+		_CopyPiece(&tempPiece, &piece);
 }
 
 bool collisionDetected(int(&piece)[4][4]) {

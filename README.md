@@ -20,6 +20,8 @@ The general requirements were:
 1. Create a game
 1. The majority of it had to be programmed in Assembly
 
+We chose to recreate Tetris because it deals with a variety of algorithms (rotatation, projection, collision, etc.) that provide just enough mental stimulation without being a huge pain to implement. It was also something that we had always wanted to recreate in the past but had never gotten around to doing.
+
 ## Background
 
 ![](https://raw.githubusercontent.com/ephemerant/Tetris-335/master/img/alexey.png)
@@ -29,6 +31,90 @@ The general requirements were:
 *--[Tetris.com](http://tetris.com/about-tetris/)*
 
 ## Code
+
+The [first prototype of the game](https://github.com/ephemerant/Tetris) was developed in C# as a proof-of-concept. We then took the time to familiarize ourselves with C++ and the SDL library. After ironing out the game in C++, we began rewriting our functions in Assembly. We learned a lot along the way about Tetris, SDL, linear algebra, and the meaning of life.
+
+As an example, here's our rotation algorithm in C#:
+
+```C#
+public bool rotate(int[,] grid)
+{
+    int tmpIndex = index;
+
+    index -= 1;
+
+    if (index < 0)
+        index = rotations.Count - 1;
+
+    if (!collidesWith(grid))                
+        return true;
+
+    // Restore index
+    index = tmpIndex;
+    return false;
+}
+```
+
+We went the object oriented route and viewed pieces as objects with varying rotational states hard-coded in. We wanted to generalize rotation and break away from hard-coding so as to make the transition into Assembly a little easier. After some thought, we came up with a rotation algorithm in C++ that we were happy with.
+
+```C++
+void rotatePiece() {
+	int tempPiece[4][4];
+
+	bool firstRowCount = false;
+	bool secondRowCount = false;
+	bool lastRowCount = false;
+
+	// Simple clockwise rotation
+	for (int y = 0; y < 4; y++) {
+		for (int x = 0; x < 4; x++) {
+			tempPiece[x][3 - y] = piece[y][x];
+
+			firstRowCount = firstRowCount || (x == 0 && piece[y][x] != 0);
+			secondRowCount = secondRowCount || (x == 1 && piece[y][x] != 0);
+			lastRowCount = lastRowCount || (x == 3 && piece[y][x] != 0);
+		}
+	}
+	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
+	if (!firstRowCount && (!secondRowCount || lastRowCount)) {
+		for (int y = 1; y < 4; y++) {
+			for (int x = 0; x < 4; x++) {
+				tempPiece[y - 1][x] = tempPiece[y][x];
+				tempPiece[y][x] = 0;
+			}
+		}
+	}
+	// If the new piece doesn't collide with anything, copy back into the original
+	if (!collisionDetected(tempPiece))
+		for (int y = 0; y < 4; y++)
+			for (int x = 0; x < 4; x++)
+				piece[y][x] = tempPiece[y][x];
+}
+```
+
+While it is bulkier, it does save having to hard-code all of the states for the seven pieces.
+
+Translated into Assembly, we ended up breaking apart the rotations and shifts into two different methods. The rotation code now returns a set of bits indicating which rows are non-empty.
+
+Here is the reduced C++ code that now uses our external Assembly methods (indicated with leading underscores):
+
+```C++
+void rotatePiece() {
+	int tempPiece[4][4];
+
+	int rowCounts = _RotateClockwise(&piece, &tempPiece);
+	
+	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
+	if (!(rowCounts & 1) && (!(rowCounts & 2) || (rowCounts & 4)))
+		_ShiftUp(&tempPiece);
+
+	// If the new piece doesn't collide with anything, copy back into the original
+	if (!collisionDetected(tempPiece))
+		_CopyPiece(&tempPiece, &piece);
+}
+```
+
+Our final step is to completey move this block of code to Assembly.
 
 ## Documentation
 
@@ -62,4 +148,16 @@ These methods combine to provide an algorithm that exactly follows the following
 
 ## Conclusions
 
+In conclusion, we're happy with what we've accomplished and what we've gotten out of the project. We've ended up with what we believe to be a fairly fun, interesting creation that is built using languages that the both of us had little experience with coming in.
+
 ## User Manual
+
+You control a falling tetromino that can be manipulated via the following keys:
+
+**Left/Right:** Move the piece to the left and right
+
+**Up:** Rotate the piece clockwise
+
+**Down:** Make the piece fall faster
+
+Your goal is to neatly stack the pieces and fill in any gaps in the resulting rows. Any filled rows are cleared, freeing up room for your unlimited supply of tetrominos. You will receive points for each clear, and you will receive more points if you clear more rows at a time.

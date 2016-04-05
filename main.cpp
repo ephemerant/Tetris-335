@@ -40,7 +40,6 @@ int rightDownTime = 0;
 int leftDownTime = 0;
 
 // Prototypes
-void update();
 void beginGame();
 
 void draw();
@@ -110,9 +109,12 @@ extern "C"
 	void _ShiftUp(int(*A)[4][4]);
 	// Export
 	void init();
-	void gameLoop();
+	void update();
+	bool gameTick();
+	bool handleInput();
 	void TTF_Quit();
 	void SDL_Quit();
+	unsigned int SDL_GetTicks();
 }
 
 // Main
@@ -124,60 +126,56 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	return 0;
 }
 
-void gameLoop() {
-	while (true) {
-		int ticks = SDL_GetTicks();
-
-		update();
-
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) // "X" clicked
-				return;
-			else if (titleScreen || gameOver) { // Out-of-game keyboard events
-				if (event.type == SDL_KEYDOWN) {
-					switch (event.key.keysym.sym) {
-					case SDLK_RETURN: // "ENTER" pressed
-						titleScreen = false;
-						gameOver = false;
-						beginGame();
-						break;
-					}
-				}
-			}
-			else { // In-game keyboard events
-				if (event.type == SDL_KEYDOWN) {
-					switch (event.key.keysym.sym) {
-					case SDLK_UP: // "UP" pressed
-						rotatePiece(); break;
-					case SDLK_RIGHT: // "RIGHT" pressed
-						rightDown = true; break;
-					case SDLK_LEFT: // "LEFT" pressed
-						leftDown = true; break;
-					case SDLK_DOWN: // "DOWN" pressed
-						downDown = true; break;
-					}
-				}
-				else if (event.type == SDL_KEYUP) {
-					switch (event.key.keysym.sym) {
-					case SDLK_RIGHT: // "RIGHT" released
-						rightDown = false;
-						rightDownTime = 0;
-						break;
-					case SDLK_LEFT: // "LEFT" released
-						leftDown = false;
-						leftDownTime = 0;
-						break;
-					case SDLK_DOWN: // "DOWN" released
-						downDown = false; break;
-					}
+bool handleInput() {
+	while (SDL_PollEvent(&event)) {
+		if (event.type == SDL_QUIT) // "X" clicked
+			return false;
+		else if (titleScreen || gameOver) { // Out-of-game keyboard events
+			if (event.type == SDL_KEYDOWN) {
+				switch (event.key.keysym.sym) {
+				case SDLK_RETURN: // "ENTER" pressed
+					titleScreen = false;
+					gameOver = false;
+					beginGame();
+					break;
 				}
 			}
 		}
-
-		// Cap FPS
-		if (SDL_GetTicks() - ticks < 1000 / framesPerSecond)
-			SDL_Delay(1000 / framesPerSecond - (SDL_GetTicks() - ticks));
+		else { // In-game keyboard events
+			if (event.type == SDL_KEYDOWN) {
+				switch (event.key.keysym.sym) {
+				case SDLK_UP: // "UP" pressed
+					rotatePiece();
+					break;
+				case SDLK_RIGHT: // "RIGHT" pressed
+					rightDown = true;
+					break;
+				case SDLK_LEFT: // "LEFT" pressed
+					leftDown = true;
+					break;
+				case SDLK_DOWN: // "DOWN" pressed
+					downDown = true;
+					break;
+				}
+			}
+			else if (event.type == SDL_KEYUP) {
+				switch (event.key.keysym.sym) {
+				case SDLK_RIGHT: // "RIGHT" released
+					rightDown = false;
+					rightDownTime = 0;
+					break;
+				case SDLK_LEFT: // "LEFT" released
+					leftDown = false;
+					leftDownTime = 0;
+					break;
+				case SDLK_DOWN: // "DOWN" released
+					downDown = false;
+					break;
+				}
+			}
+		}
 	}
+	return true;
 }
 
 void init() {
@@ -277,7 +275,7 @@ void rotatePiece() {
 	int tempPiece[4][4];
 
 	int rowCounts = _RotateClockwise(&piece, &tempPiece);
-	
+
 	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
 	if (!(rowCounts & 1) && (!(rowCounts & 2) || (rowCounts & 4)))
 		_ShiftUp(&tempPiece);

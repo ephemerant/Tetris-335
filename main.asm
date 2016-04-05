@@ -3,9 +3,14 @@
 .stack
 
 init PROTO C
-gameLoop PROTO C
+gameTick PROTO C
 TTF_Quit PROTO C
 SDL_Quit PROTO C
+
+SDL_GetTicks PROTO C
+update PROTO C
+handleInput PROTO C
+SDL_Delay PROTO C, ticks:DWORD
 
 .data
 
@@ -13,11 +18,51 @@ SDL_Quit PROTO C
 
 _MainCallback PROC
 	call init
-	call gameLoop
+	call _GameLoop
 	call TTF_Quit
 	call SDL_Quit
 	ret
 _MainCallback ENDP
+
+_GameLoop PROC
+	@@WHILE:
+		call _GameTick
+		cmp eax, 0
+		jne @@WHILE
+	@@ENDWHILE:
+	ret
+_GameLoop ENDP
+
+_GameTick PROC
+	call SDL_GetTicks
+	push eax
+
+	call update
+
+	call handleInput
+	push eax
+
+	call SDL_GetTicks
+	mov ebx, eax
+	
+	pop ecx	; "X" clicked? T/F
+	pop edx ; old ticks
+	
+	@@IF:
+		sub eax, edx
+		cmp eax, 17 ; ~60 fps
+		jb @@THEN
+		jmp @@ENDIF
+	@@THEN:
+		neg eax
+		add eax, 17
+		invoke SDL_Delay, eax	; wait remaining ticks
+	@@ENDIF:
+
+	mov eax, ecx ; return the result of the user's input (1 = continue, 0 = end game)
+	
+	ret
+_GameTick ENDP
 
 ; Helper method to get the value at grid[y][x]
 ; edx = return value

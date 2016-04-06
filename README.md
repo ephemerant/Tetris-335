@@ -20,7 +20,9 @@ The general requirements were:
 1. Create a game
 1. The majority of it had to be programmed in Assembly
 
-We chose to recreate Tetris because it deals with a variety of algorithms (rotatation, projection, collision, etc.) that provide just enough mental stimulation without being a huge pain to implement. It was also something that we had always wanted to recreate in the past but had never gotten around to doing.
+We chose to recreate Tetris because it deals with a variety of algorithms (rotatation, projection, collision, etc.) that provide just enough mental stimulation without being a huge pain to implement.  It was also something that we had always wanted to recreate in the past but had never gotten around to doing.
+
+While MASM is a powerful language, the number of commands necessary to implement the same steps as C++ and other higher languages makes the process of translating extensive and laborous. Since MASM does not handle graphics, C++ was essential in creating a functional GUI for users to interact with the game. Those obstacles intrigued and inspired us to utilize these languages to implement a classic Tetris game.
 
 ## Background
 

@@ -143,6 +143,7 @@ These methods combine to provide an algorithm that exactly follows the following
 * Full screen
 * Gamepad support
 * Level progression
+* Pause
 
 #### Would like to add, but not likely:
 

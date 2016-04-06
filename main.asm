@@ -14,6 +14,8 @@ SDL_Delay PROTO C, ticks:DWORD
 
 .data
 
+TempPiece dd 16 dup(0)
+
 .code
 
 _MainCallback PROC
@@ -83,6 +85,28 @@ _GetValueAt PROC, grid:PTR DWORD, x:DWORD, y:DWORD, w:DWORD
 	pop eax
 	ret
 _GetValueAt ENDP
+
+; Sets the array to contain only 0s
+_ClearArray PROC, piece:PTR DWORD, len:DWORD
+	mov ebx, 4 ; Byte size of double word
+	mov esi, 0 ; Temporary constant of 0 for mov [eax], esi
+	mov ecx, 0
+	@@WHILE:
+		cmp ecx, len
+		jb @@DO
+		jmp @@ENDWHILE
+	@@DO:
+		mov eax, ecx		
+		mul ebx
+		add eax, piece
+
+		mov [eax], esi
+
+		inc ecx
+		jmp @@WHILE
+	@@ENDWHILE:
+	ret
+_ClearArray ENDP
 
 ; Shift everything in A up by one, discarding the first row
 _ShiftUp PROC, A:PTR DWORD
@@ -339,6 +363,36 @@ _CollisionDetected PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:D
 	ret
 _CollisionDetected ENDP
 
+_RotatePiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
+	invoke _RotateClockwise, piece, OFFSET TempPiece
+
+	@@IFSHIFT:
+		test eax, 1 ; First row
+		jz @@ANDSHIFT
+		jmp @@ENDIFSHIFT
+	@@ANDSHIFT:
+		test eax, 2 ; Second row
+		jz @@THENSHIFT
+		jmp @@ORSHIFT
+	@@ORSHIFT:
+		test eax, 4 ; Last row
+		jnz @@THENSHIFT
+		jmp @@ENDIFSHIFT
+	@@THENSHIFT:
+		invoke _ShiftUp, OFFSET TempPiece
+	@@ENDIFSHIFT:
+
+	@@IFCOLLISION:
+		invoke _CollisionDetected, OFFSET TempPiece, grid, pieceX, pieceY
+		cmp eax, 0
+		jz @@THENCOLLISION
+		jmp @@ENDIFCOLLISION
+	@@THENCOLLISION:
+		invoke _CopyPiece, OFFSET TempPiece, piece
+	@@ENDIFCOLLISION:
+	ret
+_RotatePiece ENDP
+
 ; Clear any full rows, and return the number cleared
 _ClearRows PROC, grid:PTR DWORD
 	mov esi, 0			; # of clears
@@ -424,6 +478,8 @@ _ClearRows ENDP
 
 ; Load the expected piece configuration into &piece
 _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
+	invoke _ClearArray, piece, 16
+
 	mov eax, piece
 	mov ebx, color
 

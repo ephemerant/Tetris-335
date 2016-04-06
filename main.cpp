@@ -50,17 +50,11 @@ void drawText();
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
 
 void loadNextPiece();
-void loadPieceType(int(&piece)[4][4], int color);
-
-void rotatePiece();
 
 void moveX(int dir);
 void moveY();
 
-void projectPiece();
 void clearRows();
-
-bool collisionDetected(int(&piece)[4][4]);
 
 // Variables (SDL)
 SDL_Event event;
@@ -100,6 +94,7 @@ extern "C"
 {
 	// Import
 	void _MainCallback();
+	int _RotatePiece(int(&piece)[4][4], int(&grid)[20][10], int pieceX, int pieceY);
 	int _LoadPieceType(int(&piece)[4][4], int color);
 	int _ClearRows(int(&grid)[20][10]);
 	bool _CollisionDetected(int(&piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
@@ -107,6 +102,8 @@ extern "C"
 	void _CopyPiece(int(*A)[4][4], int(*B)[4][4]);
 	int _RotateClockwise(int(*A)[4][4], int(*B)[4][4]);
 	void _ShiftUp(int(*A)[4][4]);
+	void _ClearArray(int(&piece)[20][10], int len);
+
 	// Export
 	void init();
 	void update();
@@ -145,7 +142,7 @@ bool handleInput() {
 			if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
 				case SDLK_UP: // "UP" pressed
-					rotatePiece();
+					_RotatePiece(piece, grid, pieceX, pieceY);
 					break;
 				case SDLK_RIGHT: // "RIGHT" pressed
 					rightDown = true;
@@ -237,12 +234,12 @@ void init() {
 }
 
 void beginGame() {
-	loadPieceType(nextPiece, rand() % 7 + 1);
+	_LoadPieceType(nextPiece, rand() % 7 + 1);
 
 	loadNextPiece();
 
 	// Reset arrays
-	memset(grid, 0, sizeof(grid[0][0]) * 200);
+	_ClearArray(grid, 200);
 
 	// Reset variables
 	score = 0;
@@ -258,62 +255,33 @@ void beginGame() {
 void loadNextPiece() {
 	pieceX = 2;
 	pieceY = -1;
-
+	
 	_CopyPiece(&nextPiece, &piece); // Copy nextPiece into piece
-
-	loadPieceType(nextPiece, rand() % 7 + 1);
-}
-
-void loadPieceType(int(&piece)[4][4], int color)
-{
-	memset(piece, 0, sizeof(piece[0][0]) * 16); // Clear out piece
-
-	_LoadPieceType(piece, color);
-}
-
-void rotatePiece() {
-	int tempPiece[4][4];
-
-	int rowCounts = _RotateClockwise(&piece, &tempPiece);
-
-	// If first row of the piece is empty and the second row is empty or the last row isn't empty, shift everything up by one
-	if (!(rowCounts & 1) && (!(rowCounts & 2) || (rowCounts & 4)))
-		_ShiftUp(&tempPiece);
-
-	// If the new piece doesn't collide with anything, copy back into the original
-	if (!collisionDetected(tempPiece))
-		_CopyPiece(&tempPiece, &piece);
-}
-
-bool collisionDetected(int(&piece)[4][4]) {
-	return _CollisionDetected(piece, &grid, pieceX, pieceY);
+	_LoadPieceType(nextPiece, rand() % 7 + 1);
 }
 
 // Attempt to move the piece left or right
 void moveX(int dir) {
 	pieceX += dir;
 
-	if (collisionDetected(piece)) pieceX -= dir; // Invalid move
+	if (_CollisionDetected(piece, &grid, pieceX, pieceY))
+		pieceX -= dir; // Invalid move
 }
 
 // Attempt to apply gravity to the piece
 void moveY() {
 	pieceY++;
 
-	if (collisionDetected(piece))
+	if (_CollisionDetected(piece, &grid, pieceX, pieceY))
 	{
 		pieceY--;
-		projectPiece();
+		_ProjectPiece(&piece, &grid, pieceX, pieceY);
 		clearRows();
 		loadNextPiece();
 
-		if (collisionDetected(piece)) gameOver = true; // Next piece immediately collides = Game Over
+		if (_CollisionDetected(piece, &grid, pieceX, pieceY))
+			gameOver = true; // Next piece immediately collides = Game Over
 	}
-}
-
-// Project the piece onto the grid
-void projectPiece() {
-	_ProjectPiece(&piece, &grid, pieceX, pieceY);
 }
 
 // Clear any full rows

@@ -152,7 +152,13 @@ These methods combine to provide an algorithm that exactly follows the following
 
 In conclusion, we're happy with what we've accomplished and what we've gotten out of the project. We've ended up with what we believe to be a fairly fun, interesting creation that is built using languages that the both of us had little experience with coming in.
 
+While MASM was initially a challenge, overcoming that challenge strengthened our understanding of both languages involved and our fundamental understanding of the interaction between coding and hardware. By working at the raw memory level our appreciation for the behind the scenes maintenance involved with higher level languages vastly grew and explained many of the nuances we have encountered along the way.
+
 ## User Manual
+
+The user is initially prompted to press enter to begin.
+
+![](https://github.com/ephemerant/Tetris-335/blob/master/img/title-screen.png)
 
 You control a falling tetromino that can be manipulated via the following keys:
 
@@ -163,3 +169,9 @@ You control a falling tetromino that can be manipulated via the following keys:
 **Down:** Make the piece fall faster
 
 Your goal is to neatly stack the pieces and fill in any gaps in the resulting rows. Any filled rows are cleared, freeing up room for your unlimited supply of tetrominos. You will receive points for each clear, and you will receive more points if you clear more rows at a time.
+
+![](https://github.com/ephemerant/Tetris-335/blob/master/img/TetrisInAction.png)
+
+Once the screen has filled with tetronimos, the game has ended and must be restarted.
+
+![](https://github.com/ephemerant/Tetris-335/blob/master/img/game-over.png)

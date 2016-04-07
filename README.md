@@ -116,7 +116,39 @@ void rotatePiece() {
 }
 ```
 
-Our final step is to completey move this block of code to Assembly.
+Our final step was to completey move this block of code to Assembly. After doing so, we ended up with the following:
+
+```ASM
+_RotatePiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
+	invoke _RotateClockwise, piece, OFFSET TempPiece
+
+	@@IFSHIFT:
+		test eax, 1 ; First row
+		jz @@ANDSHIFT
+		jmp @@ENDIFSHIFT
+	@@ANDSHIFT:
+		test eax, 2 ; Second row
+		jz @@THENSHIFT
+		jmp @@ORSHIFT
+	@@ORSHIFT:
+		test eax, 4 ; Last row
+		jnz @@THENSHIFT
+		jmp @@ENDIFSHIFT
+	@@THENSHIFT:
+		invoke _ShiftUp, OFFSET TempPiece
+	@@ENDIFSHIFT:
+
+	@@IFCOLLISION:
+		invoke _CollisionDetected, OFFSET TempPiece, grid, pieceX, pieceY
+		cmp eax, 0
+		jz @@THENCOLLISION
+		jmp @@ENDIFCOLLISION
+	@@THENCOLLISION:
+		invoke _CopyPiece, OFFSET TempPiece, piece
+	@@ENDIFCOLLISION:
+	ret
+_RotatePiece ENDP
+```
 
 ## Documentation
 

@@ -123,15 +123,13 @@ _RotatePiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
 	invoke _RotateClockwise, piece, OFFSET TempPiece
 
 	@@IFSHIFT:
-		test eax, 1 ; First row
+		test eax, 1 ; First row empty
 		jz @@ANDSHIFT
 		jmp @@ENDIFSHIFT
 	@@ANDSHIFT:
-		test eax, 2 ; Second row
+		test eax, 2 ; Second row empty
 		jz @@THENSHIFT
-		jmp @@ORSHIFT
-	@@ORSHIFT:
-		test eax, 4 ; Last row
+		test eax, 4 ; Last row non-empty
 		jnz @@THENSHIFT
 		jmp @@ENDIFSHIFT
 	@@THENSHIFT:

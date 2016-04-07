@@ -205,6 +205,10 @@ These methods combine to provide an algorithm that exactly follows the following
 
 #### Smooth Controls
 
+When playing a game, it is easy to take for granted smooth, intuitive controls. While implementing our controls, we realized this quickly. We began by having requiring one press per action, and holding the key down wouldn't do anything. We quickly found it tedious having to press the horizontal and down arrows multiple times for what should be a smooth action. Thus, we devised a plan to allow for holding down the keys while also keeping input crisp and expected.
+
+To be continued...
+
 ## Future Work
 
 #### Likely to add:

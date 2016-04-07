@@ -152,6 +152,43 @@ _RotatePiece ENDP
 
 ## Documentation
 
+Function descriptions are in the works.
+
+#### Assembly Functions
+
+* _MainCallBack
+* _GameLoop
+* _GameTick
+* _GetValueAt
+* _ClearArray
+* _ShiftUp
+* _RotateClockwise
+* _CopyPiece
+* _ProjectPiece
+* _CollisionDetected
+* _RotatePiece
+* _ClearRows
+* _LoadPieceType
+
+#### C++ Functions
+
+* WinMain
+* handleInput
+* init
+* beginGame
+* loadNextPiece
+* moveX
+* moveY
+* clearRows
+* update
+* draw
+* drawText
+* drawGridLines
+* drawImage
+* drawGrid
+* drawPiece
+* LoadImage
+
 ## Problems & Solutions
 
 #### Block Rotations

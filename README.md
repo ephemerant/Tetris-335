@@ -150,23 +150,44 @@ _RotatePiece ENDP
 
 ## Documentation
 
-Function descriptions are in the works.
-
 #### Assembly Functions
 
 * _MainCallBack
+	* Input:  None
+	* Result: Handles maintainence of game, including initializing, looping, and start/end handling.
 * _GameLoop
+	* Input:  None; Receives feedback from _GameTick regarding game status.
+	* Result: Continues to run _GameTick function until it receives a 0 signaling game over.
 * _GameTick
+	* Input:  None; Receives feedback from SDL_GetTicks
+	* Result: Handles game play movement and closing execution.
 * _GetValueAt
+	* Input:  Grid pointer, pieceX, pieceY, width
+	* Result: Helper function to detect collision with walls and pieces already on the grid.
 * _ClearArray
+	* Input:  Piece pointer, length
+	* Result: Sets piece's array to all 0's and effectively clears for next piece.
 * _ShiftUp
-* _RotateClockwise
+	* Input:  A pointer
+	* Result: Shifts row A up 1 and removes the bottom row. 
 * _CopyPiece
+	* Input:  
+	* Result: 
 * _ProjectPiece
+	* Input:  
+	* Result: 
 * _CollisionDetected
+	* Input:  
+	* Result: 
 * _RotatePiece
+	* Input:  Piece pointer, Grid pointer, PieceX, PieceY
+	* Result: Rotates piece 90 degrees
 * _ClearRows
+	* Input:  
+	* Result: 
 * _LoadPieceType
+	* Input:  
+	* Result: 
 
 #### C++ Functions
 

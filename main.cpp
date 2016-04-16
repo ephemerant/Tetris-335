@@ -11,7 +11,7 @@
 #include "SDL/SDL_mixer.h"
 #include "SDL/SDL_ttf.h"
 
-extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
+//extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
 
 // Variables
 const int framesPerFall = 15;
@@ -28,6 +28,7 @@ int nextPiece[4][4];
 
 int pieceX;
 int pieceY;
+int color;
 
 bool rightDown = false;
 bool leftDown = false;
@@ -40,7 +41,7 @@ int rightDownTime = 0;
 int leftDownTime = 0;
 
 // Prototypes
-void beginGame();
+//void beginGame();
 
 void draw();
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
@@ -49,9 +50,9 @@ void drawGridLines();
 void drawText();
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
 
-void loadNextPiece();
+//void loadNextPiece();
 
-void moveX(int dir);
+//void _moveX(int dir);
 void moveY();
 
 void clearRows();
@@ -65,6 +66,7 @@ SDL_Surface *TITLE_SCREEN;
 SDL_Surface *GAME_OVER;
 SDL_Surface *SCORE;
 SDL_Surface *LABEL_SCORE;
+
 
 SDL_Surface *SQUARE_BLUE;
 SDL_Surface *SQUARE_CYAN;
@@ -95,6 +97,8 @@ extern "C"
 	// Import
 	void _MainCallback();
 	int _RotatePiece(int(&piece)[4][4], int(&grid)[20][10], int pieceX, int pieceY);
+	void _BeginGame(int(&piece)[4][4], int color, int(&grid)[20][10], int(&pieceX), int(&pieceY), int(&nextPiece)[4][4], 
+				 int(&score), bool(&downDown), bool(&rightDown), bool(&leftDown), int(&rightDownTime), int(&leftDownTime));
 	int _LoadPieceType(int(&piece)[4][4], int color);
 	int _ClearRows(int(&grid)[20][10]);
 	bool _CollisionDetected(int(&piece)[4][4], int(*grid)[20][10], int pieceX, int pieceY);
@@ -103,6 +107,10 @@ extern "C"
 	int _RotateClockwise(int(*A)[4][4], int(*B)[4][4]);
 	void _ShiftUp(int(*A)[4][4]);
 	void _ClearArray(int(&piece)[20][10], int len);
+	void _moveX(int direction,int(&piece)[4][4],int(&grid)[20][10],int(&pieceX), int(&pieceY));
+	void _moveY(int(&piece)[4][4],int(&grid)[20][10],int(&pieceX),int(&pieceY), bool(&gameOver), int(&nextPiece)[4][4],
+			  int color, int(&score));
+	
 
 	// Export
 	void init();
@@ -112,6 +120,7 @@ extern "C"
 	void TTF_Quit();
 	void SDL_Quit();
 	unsigned int SDL_GetTicks();
+	void soundFX();
 }
 
 // Main
@@ -133,7 +142,7 @@ bool handleInput() {
 				case SDLK_RETURN: // "ENTER" pressed
 					titleScreen = false;
 					gameOver = false;
-					beginGame();
+					_BeginGame(piece,rand() % 7 + 1,grid,pieceX,pieceY,nextPiece,score,downDown,rightDown,leftDown,rightDownTime,leftDownTime);
 					break;
 				}
 			}
@@ -230,69 +239,11 @@ void init() {
 	textBoxScore.x = textBox.x + 80;
 	textBoxScore.y = textBox.y;
 
-	beginGame();
+	_BeginGame(piece,rand() % 7 + 1,grid,pieceX,pieceY,nextPiece,score,downDown,rightDown,leftDown,rightDownTime,leftDownTime);
 }
 
-void beginGame() {
-	_LoadPieceType(nextPiece, rand() % 7 + 1);
 
-	loadNextPiece();
-
-	// Reset arrays
-	_ClearArray(grid, 200);
-
-	// Reset variables
-	score = 0;
-
-	downDown = false;
-	rightDown = false;
-	leftDown = false;
-
-	rightDownTime = 0;
-	leftDownTime = 0;
-}
-
-void loadNextPiece() {
-	pieceX = 2;
-	pieceY = -1;
-	
-	_CopyPiece(&nextPiece, &piece); // Copy nextPiece into piece
-	_LoadPieceType(nextPiece, rand() % 7 + 1);
-}
-
-// Attempt to move the piece left or right
-void moveX(int dir) {
-	pieceX += dir;
-
-	if (_CollisionDetected(piece, &grid, pieceX, pieceY))
-		pieceX -= dir; // Invalid move
-}
-
-// Attempt to apply gravity to the piece
-void moveY() {
-	pieceY++;
-
-	if (_CollisionDetected(piece, &grid, pieceX, pieceY))
-	{
-		pieceY--;
-		_ProjectPiece(&piece, &grid, pieceX, pieceY);
-		clearRows();
-		loadNextPiece();
-
-		if (_CollisionDetected(piece, &grid, pieceX, pieceY))
-			gameOver = true; // Next piece immediately collides = Game Over
-	}
-}
-
-// Clear any full rows
-void clearRows() {
-	int clears = _ClearRows(grid);
-
-	if (clears) {
-		Mix_PlayChannel(-1, AUDIO_LINE, 0);
-		score += clears * clears * 10;
-	}
-}
+void soundFX() { Mix_PlayChannel(-1, AUDIO_LINE, 0); }
 
 // Handle gravity/graphics/movement
 void update() {
@@ -305,14 +256,14 @@ void update() {
 		drawImage(50, 50, GAME_OVER, SCREEN);
 	else {
 		if (rightDown && !leftDown && !(rightDownTime++ % 6)) // Move right every 6 frames if right is held
-			moveX(1);
+			_moveX(1,piece, grid,pieceX,pieceY);
 		else if (!rightDown && leftDown && !(leftDownTime++ % 6))
-			moveX(-1);
+			_moveX(-1,piece, grid,pieceX,pieceY);
 
 		if (downDown)
 			frames += 8;
 		if (++frames > framesPerFall) {
-			moveY();
+			_moveY(piece, grid, pieceX, pieceY, gameOver, nextPiece, rand() % 7 + 1, score);
 			frames = 0;
 		}
 		draw();
@@ -350,7 +301,7 @@ void drawText()
 
 	SDL_FreeSurface(SCORE); // Dispose of SCORE, otherwise we'll have a memory leak
 }
-
+		
 void drawGridLines()
 {
 	for (int y = 0; y < 20; y++) {

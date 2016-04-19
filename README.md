@@ -171,42 +171,71 @@ _RotatePiece ENDP
 	* Input:  A pointer
 	* Result: Shifts row A up 1 and removes the bottom row. 
 * _CopyPiece
-	* Input:  
-	* Result: 
+	* Input:  A Pointer for piece, B Pointer for target
+	* Result: Replicates A to B
 * _ProjectPiece
-	* Input:  
-	* Result: 
+	* Input:  Piece pointer, Grid pointer, PieceX coordinate, PieceY coordinate
+	* Result: Project piece onto the game grid
 * _CollisionDetected
-	* Input:  
-	* Result: 
+	* Input:  Piece pointer, Grid pointer, PieceX coordinate, PieceY coordinate
+	* Result: Returns true if collision occurs
 * _RotatePiece
 	* Input:  Piece pointer, Grid pointer, PieceX, PieceY
 	* Result: Rotates piece 90 degrees
 * _ClearRows
-	* Input:  
-	* Result: 
+	* Input:  Grid pointer, Score pointer
+	* Result: Clears full rows and awards points
 * _LoadPieceType
-	* Input:  
-	* Result: 
-
+	* Input:  Piece pointer, Color number
+	* Result: Loads the chosen piece's configuration into piece pointer
+* _BeginGame
+	* Input: Piece pointer, Color number, Grid pointer, X pointer, Y Pointer, nextPiece pointer, Score pointer, downDown pointer, rightDown pointer, leftDown pointer, rightDownTime pointer, leftDownTime pointer
+	* Result: Clears any past game results, resets all memory allocations and begins a new game
+* _loadNextPiece
+	* Input: X pointer, Y pointer, nextPiece pointer, Piece (current) pointer, Color number
+	* Result: Generates the next piece and prepares it for the grid
+* _moveX
+	* Input: Direction number, Piece pointer, Grid pointer, PieceX pointer, PieceY pointer
+	* Result: Checks for collision and shifts piece left or right
+* _moveY
+	* Input: Piece pointer, Grid pointer, PieceX pointer, PieceY pointer, gameOver pointer, nextPiece pointer, Color number, Score pointer
+	* Result: Increases speed of fall, checks for collision then loads next piece
+	
 #### C++ Functions
 
 * WinMain
+	* Input:  HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow
+	* Result: Calls _MainCallBack
 * handleInput
+	* Input:  None, watches for SDL_PollEvents
+	* Result: Reacts to key presses 
 * init
-* beginGame
-* loadNextPiece
-* moveX
-* moveY
-* clearRows
+	* Input:  None
+	* Result: Initializes game and sets image locations/screen dimensions/ etc
 * update
+	* Input:  None
+	* Result: Handles gravity and resetting screen
 * draw
+	* Input:  None
+	* Result: Handles grid and all graphics
 * drawText
+	* Input:  None
+	* Result: Adds text to screen
 * drawGridLines
+	* Input:  None
+	* Result: Adds grid lines to grid
 * drawImage
+	* Input:  X coordinate, Y coordinate, Source, Destination
+	* Result: Adds images to grid
 * drawGrid
+	* Input:  None
+	* Result: Adds gridlines to screen
 * drawPiece
+	* Input:  Piece pointer, PieceX coordinate, PieceY coordinate
+	* Result: Adds piece to grid
 * LoadImage
+	* Input:  Filename
+	* Result: Adds image file to SDL_Surface
 
 ## Problems & Solutions
 
@@ -225,21 +254,6 @@ These methods combine to provide an algorithm that exactly follows the following
 #### Smooth Controls
 
 When playing a game, it is easy to take for granted smooth, intuitive controls. While implementing our controls, we realized this quickly. We began by having requiring one press per action, and holding the key down wouldn't do anything. We quickly found it tedious having to press the horizontal and down arrows multiple times for what should be a smooth action. Thus, we devised a plan to allow for holding down the keys while also keeping input crisp and expected.
-
-To be continued...
-
-## Future Work
-
-#### Likely to add:
-
-* Full screen
-* Gamepad support
-* Level progression
-* Pause
-
-#### Would like to add, but not likely:
-
-* AI that can play for you
 
 ## Conclusions
 

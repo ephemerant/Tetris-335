@@ -11,10 +11,11 @@ SDL_GetTicks PROTO C
 update PROTO C
 handleInput PROTO C
 SDL_Delay PROTO C, ticks:DWORD
+soundFX PROTO C
 
 .data
 
-TempPiece dd 16 dup(0)
+TempPiece		 dd 16 dup(0)
 
 .code
 
@@ -392,7 +393,7 @@ _RotatePiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
 _RotatePiece ENDP
 
 ; Clear any full rows, and return the number cleared
-_ClearRows PROC, grid:PTR DWORD
+_ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
 	mov esi, 0			; # of clears
 	mov edi, grid
 
@@ -470,7 +471,20 @@ _ClearRows PROC, grid:PTR DWORD
 		dec ebx
 		jmp @@FORY
 	@@ENDFORY:
-	mov eax, esi
+
+		cmp esi, 0
+		jz @@NOWIN		; skip the fun
+		
+		mov ebx, score
+		mov ecx, [ebx]
+		mov eax, 10
+		mul esi
+		add ecx, eax
+		mov [ebx], ecx		; add to score
+		call soundFX		; play the sounds if cleared
+
+	@@NOWIN:
+		mov eax, esi
 	ret
 _ClearRows ENDP
 
@@ -541,5 +555,151 @@ _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
 	@@ENDSWITCH:	
 	ret
 _LoadPieceType ENDP
+
+_loadNextPiece PROC, x:PTR DWORD, y:PTR DWORD, nextPiece:PTR DWORD, piece:PTR DWORD, color:DWORD
+
+	push eax
+	push ebx
+
+	mov ebx, 2
+	mov eax, x
+	mov [eax], ebx
+
+	mov ebx, -1
+	mov eax, y
+	mov [eax], ebx
+
+	invoke _CopyPiece, nextPiece, piece
+	invoke _LoadPieceType, nextPiece, color
+
+	pop ebx
+	pop eax
+	ret
+
+_loadNextPiece ENDP
+
+_moveX PROC, direction:DWORD, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD ,pieceY:PTR DWORD
+
+	push eax
+	push ebx
+	push edx
+	push ecx
+
+	mov edx, pieceX		
+	mov ebx, [edx]			; x = pieceX
+	add ebx, direction		; x = pieceX + direction
+	mov [edx], ebx
+	mov ecx, pieceY
+	mov eax, [ecx]
+
+	invoke _CollisionDetected, piece, grid, ebx, eax
+
+	cmp eax, 0			; Check for false
+	jz MoveXcomplete		; No collision
+
+	mov edx, pieceX		
+	mov ebx, [edx]			; x = pieceX
+	sub ebx, direction		; x = pieceX + direction
+	mov [edx], ebx
+
+	MoveXcomplete:
+		pop ecx
+		pop edx
+		pop ebx
+		pop eax
+		ret
+
+_moveX ENDP
+
+_moveY PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD, pieceY:PTR DWORD, gameOver:PTR DWORD,
+		   nextPiece:PTR DWORD, color:DWORD, score:PTR DWORD
+
+	push eax
+	push ebx
+	push edx
+	push ecx
+
+	mov edx, pieceY		
+	mov ebx, [edx]
+	inc ebx
+	mov [edx], ebx				; Y++
+	mov ebx, pieceX
+
+	mov ecx, piece
+	mov eax, [ecx]
+
+	invoke _CollisionDetected, piece, grid, [ebx], [edx]
+
+	cmp eax, 0			; Check for false
+	jz MoveXcomplete		; No collision
+
+	mov edx, pieceY		
+	mov ebx, [edx]
+	dec ebx
+	mov [edx], ebx				; Y++
+	mov ebx, pieceX
+	
+	invoke _ProjectPiece, piece, grid, [ebx], [edx]
+
+	invoke _ClearRows, grid, score
+
+	invoke _loadNextPiece, pieceX, pieceY, nextPiece, piece, color
+
+
+	mov ebx, piece
+	mov ecx, [ebx]
+	mov ebx, pieceX
+	mov eax, [ebx]
+	mov ebx, pieceY
+	mov edx, [ebx]
+
+	invoke _CollisionDetected, piece, grid, eax, edx
+
+	cmp eax, 0
+	jz MoveXcomplete
+
+	mov eax, 1
+	mov ebx, gameOver
+	mov [ebx], eax
+
+	MoveXcomplete:
+		pop ecx
+		pop edx
+		pop ebx
+		pop eax
+		ret
+
+_moveY ENDP
+
+_BeginGame PROC, piece:PTR DWORD, color:DWORD, grid:PTR DWORD, x:PTR DWORD, y:PTR DWORD, nextPiece:PTR DWORD,
+			  score:PTR DWORD, downDown:PTR DWORD, rightDown:PTR DWORD, leftDown:PTR DWORD, rightDownTime:PTR DWORD,
+			  leftDownTime:PTR DWORD
+	push eax
+	push ebx
+
+	mov ebx, 0
+	mov eax, score
+	mov [eax],		ebx
+	mov eax, downDown
+	mov [eax],		ebx
+	mov eax, rightDown
+	mov [eax],		ebx
+	mov eax, leftDown
+	mov [eax],		ebx
+	mov eax, rightDownTime
+	mov [eax],		ebx
+	mov eax, leftDownTime
+	mov [eax],		ebx
+
+	invoke _LoadPieceType, piece, color
+
+	invoke _loadNextPiece, x, y, nextPiece, piece, color
+
+	invoke _ClearArray, grid, 200
+
+	pop ebx
+	pop eax
+	ret
+_BeginGame ENDP
 
 END

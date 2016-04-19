@@ -84,3 +84,10 @@ Tetris 1.0.vcxproj
 *.filters
 *.user
 Tetris 1.0.opensdf
+SDL.dll
+libfreetype-6.dll
+libpng15-15.dll
+SDL_image.dll
+SDL_mixer.dll
+zlib1.dll
+SDL_ttf.dll

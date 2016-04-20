@@ -20,9 +20,9 @@ The general requirements were:
 1. Create a game
 1. The majority of it had to be programmed in Assembly
 
-We chose to recreate Tetris because it deals with a variety of algorithms (rotatation, projection, collision, etc.) that provide just enough mental stimulation without being a huge pain to implement.  It was also something that we had always wanted to recreate in the past but had never gotten around to doing.
+We chose to recreate Tetris because it deals with a variety of algorithms (rotation, projection, collision, etc.) that provide just enough mental stimulation without being a huge pain to implement.  It was also something that we had always wanted to recreate in the past but had never gotten around to doing.
 
-While MASM is a powerful language, the number of commands necessary to implement the same steps as C++ and other higher languages makes the process of translating extensive and laborous. Since MASM does not handle graphics, C++ was essential in creating a functional GUI for users to interact with the game. Those obstacles intrigued and inspired us to utilize these languages to implement a classic Tetris game.
+While MASM is a powerful language, the number of commands necessary to implement the same steps as C++ and other higher languages makes the process of translating extensive and laborious. Since MASM does not handle graphics, C++ was essential in creating a functional GUI for users to interact with the game. Those obstacles intrigued and inspired us to utilize these languages to implement a classic Tetris game.
 
 ## Background
 
@@ -116,7 +116,7 @@ void rotatePiece() {
 }
 ```
 
-Our final step was to completey move this block of code to Assembly. After doing so, we ended up with the following:
+Our final step was to completely move this block of code to Assembly. After doing so, we ended up with the following:
 
 ```ASM
 _RotatePiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
@@ -154,7 +154,7 @@ _RotatePiece ENDP
 
 * _MainCallBack
 	* Input:  None
-	* Result: Handles maintainence of game, including initializing, looping, and start/end handling.
+	* Result: Handles maintenance of game, including initializing, looping, and start/end handling.
 * _GameLoop
 	* Input:  None; Receives feedback from _GameTick regarding game status.
 	* Result: Continues to run _GameTick function until it receives a 0 signaling game over.

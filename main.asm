@@ -15,21 +15,21 @@ soundFX PROTO C
 
 .data
 
-TempPiece		 dd 16 dup(0)
+TempPiece dd 16 dup(0) ; A 4x4 grid for temporary piece operations
 
 .code
 
 _MainCallback PROC
-	call init
-	call _GameLoop
-	call TTF_Quit
-	call SDL_Quit
+	call init ; Initialize SDL, load resources, begin game
+	call _GameLoop ; Apply gravity, handle keyboard input, etc, until the player loses
+	call TTF_Quit ; Unload fonts
+	call SDL_Quit ; Unload other resources
 	ret
 _MainCallback ENDP
 
 _GameLoop PROC
 	@@WHILE:
-		call _GameTick
+		call _GameTick ; Called once per frame
 		cmp eax, 0
 		jne @@WHILE
 	@@ENDWHILE:
@@ -40,9 +40,9 @@ _GameTick PROC
 	call SDL_GetTicks
 	push eax
 
-	call update
+	call update ; Apply gravity, handle movement, draw graphics
 
-	call handleInput
+	call handleInput ; Handle keyboard commands, etc
 	push eax
 
 	call SDL_GetTicks
@@ -90,8 +90,8 @@ _GetValueAt ENDP
 ; Sets the array to contain only 0s
 _ClearArray PROC, piece:PTR DWORD, len:DWORD
 	mov ebx, 4 ; Byte size of double word
-	mov esi, 0 ; Temporary constant of 0 for mov [eax], esi
-	mov ecx, 0
+	xor esi, esi ; Temporary constant of 0 for mov [eax], esi
+	xor ecx, ecx
 	@@WHILE:
 		cmp ecx, len
 		jb @@DO
@@ -101,7 +101,7 @@ _ClearArray PROC, piece:PTR DWORD, len:DWORD
 		mul ebx
 		add eax, piece
 
-		mov [eax], esi
+		mov [eax], esi ; Overwrite current index with 0
 
 		inc ecx
 		jmp @@WHILE
@@ -117,28 +117,28 @@ _ShiftUp PROC, A:PTR DWORD
 		jb @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx		; x
 		@@FORX:
 			cmp ecx, 4
 			jb @@LOOPX
 			jmp @@ENDFORX
 		@@LOOPX:
-			mov eax, ebx
-			sub eax, 1
+			mov eax, ebx ; Calculate the adjusted index based on x and y-1
+			dec eax
 			mov edx, 4
 			mul edx
 
 			add eax, ecx
 			mov edx, 4
-			mul edx
+			mul edx ; We have now calculated the adjusted index
 
 			add eax, A	; Get the address of the calculated position
 
-			invoke _GetValueAt, A, ecx, ebx, 4
+			invoke _GetValueAt, A, ecx, ebx, 4 ; Set edx to A[y][x]
 			mov [eax], edx	; A[y-1][x] = A[y][x];
 
 			add eax, 16
-			mov edx, 0
+			xor edx, edx
 			mov [eax], edx	; Clear out the square
 
 			inc ecx
@@ -153,21 +153,21 @@ _ShiftUp ENDP
 
 ; Rotate A into B
 _RotateClockwise PROC, A:PTR DWORD, B:PTR DWORD
-	mov esi, 0			; bit flags representing empty rows
+	xor esi, esi			; bit flags representing empty rows
 
-	mov ebx, 0			; y
+	xor ebx, ebx			; y
 	@@FORY:
 		cmp ebx, 4
 		jb @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx		; x
 		@@FORX:
 			cmp ecx, 4
 			jb @@LOOPX
 			jmp @@ENDFORX
 		@@LOOPX:
-			mov eax, ecx
+			mov eax, ecx	; Manipulate x and y to access B[x][3-y], i.e. B + 4((4 * x) + (3 - y))
 			mov edx, 4
 			mul edx
 
@@ -183,7 +183,7 @@ _RotateClockwise PROC, A:PTR DWORD, B:PTR DWORD
 			invoke _GetValueAt, A, ecx, ebx, 4
 			mov [eax], edx	; B[x][3-y] = A[y][x]
 
-			@@IFVALUE:
+			@@IFVALUE: ; Store within esi information about the rows			
 				cmp edx, 0
 				jne @@THENVALUE
 				jmp @@ENDIFVALUE
@@ -196,6 +196,11 @@ _RotateClockwise PROC, A:PTR DWORD, B:PTR DWORD
 					cmp ecx, 3
 					je @@LAST
 					jmp @@ENDSWITCHx
+
+				; Bit values of esi:
+				;	1 = First row non-empty
+				;	2 = Second row non-empty
+				;	4 = Fourth row non-empty
 				@@FIRST:
 					or esi, 1
 					jmp @@ENDSWITCHx
@@ -218,21 +223,21 @@ _RotateClockwise PROC, A:PTR DWORD, B:PTR DWORD
 	ret
 _RotateClockwise ENDP
 
-; Copy A into B
+; Copy piece A into B
 _CopyPiece PROC, A:PTR DWORD, B:PTR DWORD
-	mov ebx, 0			; y
+	xor ebx, ebx			; y
 	@@FORY:
 		cmp ebx, 4
 		jb @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx		; x
 		@@FORX:
 			cmp ecx, 4
 			jb @@LOOPX
 			jmp @@ENDFORX
 		@@LOOPX:
-			mov eax, ebx
+			mov eax, ebx ; We want to access B[y][x], i.e. B + 4(4*y + x)
 			mov edx, 4
 			mul edx
 
@@ -242,7 +247,7 @@ _CopyPiece PROC, A:PTR DWORD, B:PTR DWORD
 
 			add eax, B	; Get the address of the calculated position
 
-			invoke _GetValueAt, A, ecx, ebx, 4
+			invoke _GetValueAt, A, ecx, ebx, 4 ; Set edx = A[y][x]
 			mov [eax], edx	; Copy the square into its calculated position
 
 			inc ecx
@@ -257,13 +262,13 @@ _CopyPiece ENDP
 
 ; Project the piece onto the grid
 _ProjectPiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD		
-	mov ebx, 0			; y
+	xor ebx, ebx			; y
 	@@FORY:
 		cmp ebx, 4
 		jl @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx		; x
 		@@FORX:
 			cmp ecx, 4
 			jl @@LOOPX
@@ -275,14 +280,15 @@ _ProjectPiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
 			mov eax, ebx
 			add eax, pieceY	; y + pieceY
 
-			invoke _GetValueAt, grid, edi, eax, 10
+			invoke _GetValueAt, grid, edi, eax, 10 ; edx = grid[y + pieceY][x + pieceX]
 
-			cmp edx, 0		; Overwrite blank squares only
+			cmp edx, 0		; Overwrite blank grid squares only
 			jz @@BLANK
 			jmp @@NOTBLANK			
 
 			@@BLANK:
-				mov edx, 10
+				mov edx, 10		; We want eax to correspond to the index for grid[y][x]
+								; i.e. eax = grid + 4(10*(y + pieceY) + (x + pieceX))
 				mul edx
 
 				add eax, edi
@@ -291,8 +297,8 @@ _ProjectPiece PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD
 
 				add eax, grid	; Get the address of the calculated position
 
-				invoke _GetValueAt, piece, ecx, ebx, 4
-				mov [eax], edx	; Copy the square into its calculated position
+				invoke _GetValueAt, piece, ecx, ebx, 4 ; edx = piece[y][x]
+				mov [eax], edx	; Copy the piece's square into its calculated position in the grid
 			@@NOTBLANK:
 
 			inc ecx
@@ -307,15 +313,15 @@ _ProjectPiece ENDP
 
 ; Return true if the piece collides with the grid
 _CollisionDetected PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:DWORD	
-	mov eax, 0			; default = false (no collision)
+	xor eax, eax			; default = false (no collision)
 
-	mov ebx, 0			; y
+	xor ebx, ebx			; y
 	@@FORY:
 		cmp ebx, 4
 		jl @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx		; x
 		@@FORX:
 			cmp ecx, 4
 			jl @@LOOPX
@@ -327,10 +333,10 @@ _CollisionDetected PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:D
 			jz @@NOCOLLISION
 
 			mov edx, ecx
-			add edx, pieceX	; x + pieceX
+			add edx, pieceX	; edx = x + pieceX
 
 			mov esi, ebx
-			add esi, pieceY	; y + pieceY
+			add esi, pieceY	; esi = y + pieceY
 
 			cmp edx, 9		; too far right
 			jg @@COLLISION
@@ -342,7 +348,7 @@ _CollisionDetected PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:DWORD, pieceY:D
 			cmp esi, 0		; too far up
 			jl @@COLLISION
 			
-			invoke _GetValueAt, grid, edx, esi, 10
+			invoke _GetValueAt, grid, edx, esi, 10 ; edx = grid[y + pieceY][x + pieceX]
 
 			cmp edx, 0
 			jne @@COLLISION
@@ -394,7 +400,7 @@ _RotatePiece ENDP
 
 ; Clear any full rows, and return the number cleared
 _ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
-	mov esi, 0			; # of clears
+	xor esi, esi		; # of clears
 	mov edi, grid
 
 	mov ebx, 19			; y
@@ -403,7 +409,7 @@ _ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
 		jge @@LOOPY
 		jmp @@ENDFORY
 	@@LOOPY:
-		mov ecx, 0		; x
+		xor ecx, ecx	; x
 		@@FORX:
 			cmp ecx, 10
 			jb @@LOOPX
@@ -415,7 +421,7 @@ _ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
 				je @@THENEMPTY
 				jmp @@ENDIFEMPTY
 			@@THENEMPTY:
-				mov ecx, 0 ; Mark as empty
+				xor ecx, ecx ; Mark as empty
 				jmp @@ENDFORX
 			@@ENDIFEMPTY:
 			inc ecx
@@ -433,14 +439,15 @@ _ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
 				ja @@LOOPY2
 				jmp @@ENDFORY2
 			@@LOOPY2:
-				mov edx, 0
+				xor edx, edx
 				@@FORX2:
 					cmp edx, 10
 					jb @@LOOPX2
 					jmp @@ENDFORX2
 				@@LOOPX2:
 					push edx
-					mov edx, 10
+					mov edx, 10 ; We want eax to refer to the index that corresponds to grid[y][x]
+								; i.e. grid + 4(10*y + x)
 					mov eax, ecx
 					mul edx
 					pop edx
@@ -451,8 +458,8 @@ _ClearRows PROC, grid:PTR DWORD, score:PTR DWORD
 					mul edx
 					add eax, edi					
 
-					mov edx, [eax-40]
-					mov [eax], edx ; Move to the square the contents of the square above it
+					mov edx, [eax-40]	; edx = grid[y-1][x]
+					mov [eax], edx		; Move to the square the contents of the square above it
 
 					pop edx
 
@@ -490,7 +497,7 @@ _ClearRows ENDP
 
 ; Load the expected piece configuration into &piece
 _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
-	invoke _ClearArray, piece, 16
+	invoke _ClearArray, piece, 16 ; Clear piece out, so we can have a fresh slate to write to
 
 	mov eax, piece
 	mov ebx, color
@@ -511,6 +518,7 @@ _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
 		cmp ebx, 7
 		je @@L
 		jmp @@ENDSWITCH
+		; Load the various piece structures
 		@@J:
 			mov [eax + 16*1 + 4*1], ebx ; y - multiples of 16, x - multiples of 4
 			mov [eax + 16*1 + 4*2], ebx
@@ -557,29 +565,26 @@ _LoadPieceType PROC, piece:PTR DWORD, color:DWORD
 _LoadPieceType ENDP
 
 _loadNextPiece PROC, x:PTR DWORD, y:PTR DWORD, nextPiece:PTR DWORD, piece:PTR DWORD, color:DWORD
-
 	push eax
 	push ebx
 
 	mov ebx, 2
 	mov eax, x
-	mov [eax], ebx
+	mov [eax], ebx ; pieceX = 2
 
 	mov ebx, -1
 	mov eax, y
-	mov [eax], ebx
+	mov [eax], ebx ; pieceY = -1
 
-	invoke _CopyPiece, nextPiece, piece
-	invoke _LoadPieceType, nextPiece, color
+	invoke _CopyPiece, nextPiece, piece ; Copy nextPiece into piece
+	invoke _LoadPieceType, nextPiece, color ; Load a new piece of type color into nextPiece
 
 	pop ebx
 	pop eax
 	ret
-
 _loadNextPiece ENDP
 
 _moveX PROC, direction:DWORD, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD ,pieceY:PTR DWORD
-
 	push eax
 	push ebx
 	push edx
@@ -588,32 +593,31 @@ _moveX PROC, direction:DWORD, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD 
 	mov edx, pieceX		
 	mov ebx, [edx]			; x = pieceX
 	add ebx, direction		; x = pieceX + direction
-	mov [edx], ebx
+	mov [edx], ebx			; Effectively, pieceX += direction
 	mov ecx, pieceY
 	mov eax, [ecx]
 
-	invoke _CollisionDetected, piece, grid, ebx, eax
+	invoke _CollisionDetected, piece, grid, ebx, eax ; See if moving the piece results in a collision
 
-	cmp eax, 0			; Check for false
-	jz MoveXcomplete		; No collision
+	cmp eax, 0				; When eax = 0, no collision
+	jz @@MoveXcomplete
 
+	; If collision, restore pieceX
 	mov edx, pieceX		
 	mov ebx, [edx]			; x = pieceX
-	sub ebx, direction		; x = pieceX + direction
-	mov [edx], ebx
+	sub ebx, direction		; x = pieceX - direction
+	mov [edx], ebx			; pieceX -= direction
 
-	MoveXcomplete:
+	@@MoveXcomplete:
 		pop ecx
 		pop edx
 		pop ebx
 		pop eax
 		ret
-
 _moveX ENDP
 
 _moveY PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD, pieceY:PTR DWORD, gameOver:PTR DWORD,
 		   nextPiece:PTR DWORD, color:DWORD, score:PTR DWORD
-
 	push eax
 	push ebx
 	push edx
@@ -622,7 +626,7 @@ _moveY PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD, pieceY:PTR DWORD
 	mov edx, pieceY		
 	mov ebx, [edx]
 	inc ebx
-	mov [edx], ebx				; Y++
+	mov [edx], ebx	; Increment pieceY (move the piece down)
 	mov ebx, pieceX
 
 	mov ecx, piece
@@ -630,21 +634,21 @@ _moveY PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD, pieceY:PTR DWORD
 
 	invoke _CollisionDetected, piece, grid, [ebx], [edx]
 
-	cmp eax, 0			; Check for false
-	jz MoveXcomplete		; No collision
+	cmp eax, 0			; Is there a collision after moving the piece down?
+	jz @@MoveYcomplete	; 0 = No collision
 
+	; Collision detected, so place the piece
 	mov edx, pieceY		
 	mov ebx, [edx]
 	dec ebx
-	mov [edx], ebx				; Y++
+	mov [edx], ebx		; Decrement pieceY (restore it to pre-collision value)
 	mov ebx, pieceX
 	
-	invoke _ProjectPiece, piece, grid, [ebx], [edx]
+	invoke _ProjectPiece, piece, grid, [ebx], [edx] ; Place the piece
 
-	invoke _ClearRows, grid, score
+	invoke _ClearRows, grid, score ; Clear any rows that the piece just filled
 
-	invoke _loadNextPiece, pieceX, pieceY, nextPiece, piece, color
-
+	invoke _loadNextPiece, pieceX, pieceY, nextPiece, piece, color ; Load the next piece
 
 	mov ebx, piece
 	mov ecx, [ebx]
@@ -653,22 +657,22 @@ _moveY PROC, piece:PTR DWORD, grid:PTR DWORD, pieceX:PTR DWORD, pieceY:PTR DWORD
 	mov ebx, pieceY
 	mov edx, [ebx]
 
-	invoke _CollisionDetected, piece, grid, eax, edx
+	invoke _CollisionDetected, piece, grid, eax, edx	; Check if the new piece immediately collides
+														; If so, game over!
 
 	cmp eax, 0
-	jz MoveXcomplete
+	jz @@MoveYcomplete
 
 	mov eax, 1
 	mov ebx, gameOver
 	mov [ebx], eax
 
-	MoveXcomplete:
+	@@MoveYcomplete:
 		pop ecx
 		pop edx
 		pop ebx
 		pop eax
 		ret
-
 _moveY ENDP
 
 _BeginGame PROC, piece:PTR DWORD, color:DWORD, grid:PTR DWORD, x:PTR DWORD, y:PTR DWORD, nextPiece:PTR DWORD,
@@ -677,21 +681,26 @@ _BeginGame PROC, piece:PTR DWORD, color:DWORD, grid:PTR DWORD, x:PTR DWORD, y:PT
 	push eax
 	push ebx
 
-	mov ebx, 0
+	xor ebx, ebx
 	mov eax, score
-	mov [eax],		ebx
-	mov eax, downDown
-	mov [eax],		ebx
-	mov eax, rightDown
-	mov [eax],		ebx
-	mov eax, leftDown
-	mov [eax],		ebx
-	mov eax, rightDownTime
-	mov [eax],		ebx
-	mov eax, leftDownTime
-	mov [eax],		ebx
+	mov [eax], ebx ; Set score = 0
 
-	invoke _LoadPieceType, piece, color
+	mov eax, downDown
+	mov [eax], ebx ; Set downDown = 0
+
+	mov eax, rightDown
+	mov [eax], ebx ; Set rightDown = 0
+
+	mov eax, leftDown
+	mov [eax], ebx ; set leftDown = 0
+
+	mov eax, rightDownTime
+	mov [eax], ebx ; Set rightDownTime = 0
+
+	mov eax, leftDownTime
+	mov [eax], ebx ; Set leftDownTime = 0
+
+	invoke _LoadPieceType, piece, color ; Load first piece
 
 	invoke _loadNextPiece, x, y, nextPiece, piece, color
 

@@ -11,8 +11,6 @@
 #include "SDL/SDL_mixer.h"
 #include "SDL/SDL_ttf.h"
 
-//extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
-
 // Variables
 const int framesPerFall = 15;
 const int framesPerSecond = 60;
@@ -41,7 +39,6 @@ int rightDownTime = 0;
 int leftDownTime = 0;
 
 // Prototypes
-//void beginGame();
 
 void draw();
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest);
@@ -49,11 +46,6 @@ void drawGrid();
 void drawGridLines();
 void drawText();
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY);
-
-//void loadNextPiece();
-
-//void _moveX(int dir);
-void moveY();
 
 void clearRows();
 
@@ -110,8 +102,7 @@ extern "C"
 	void _moveX(int direction, int(&piece)[4][4], int(&grid)[20][10], int(&pieceX), int(&pieceY));
 	void _moveY(int(&piece)[4][4], int(&grid)[20][10], int(&pieceX), int(&pieceY), bool(&gameOver), int(&nextPiece)[4][4],
 		int color, int(&score));
-
-
+	
 	// Export
 	void init();
 	void update();
@@ -242,7 +233,6 @@ void init() {
 	_BeginGame(piece, rand() % 7 + 1, grid, pieceX, pieceY, nextPiece, score, downDown, rightDown, leftDown, rightDownTime, leftDownTime);
 }
 
-
 void soundFX() { Mix_PlayChannel(-1, AUDIO_LINE, 0); }
 
 // Handle gravity/graphics/movement
@@ -294,6 +284,8 @@ void draw() {
 
 void drawText()
 {
+	// Draw the text "Score:", as well as the actual score
+
 	SCORE = TTF_RenderText_Solid(FONT_UBUNTU_MONO_BOLD, to_string(score).c_str(), COLOR_WHITE);
 
 	SDL_BlitSurface(SCORE, NULL, SCREEN, &textBoxScore);
@@ -304,6 +296,8 @@ void drawText()
 
 void drawGridLines()
 {
+	// Draw the 20*10 gridlines for the playing area
+
 	for (int y = 0; y < 20; y++) {
 		for (int x = 0; x < 10; x++) {
 			square.w = 19;
@@ -318,6 +312,8 @@ void drawGridLines()
 }
 
 void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest) {
+	// Draw the image "src" to "dest" with offset (x, y)
+
 	SDL_Rect offset;
 
 	offset.x = x;
@@ -327,6 +323,8 @@ void drawImage(int x, int y, SDL_Surface* src, SDL_Surface* dest) {
 }
 
 void drawGrid() {
+	// Display the pieces that have been dropped into the grid
+
 	for (int y = 0; y < 20; y++) {
 		for (int x = 0; x < 10; x++) {
 			SDL_Surface *SQUARE_CURRENT = NULL;
@@ -342,12 +340,15 @@ void drawGrid() {
 			case 7: SQUARE_CURRENT = SQUARE_ORANGE; break;
 			}
 
-			if (SQUARE_CURRENT != NULL) drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
+			if (SQUARE_CURRENT != NULL) // If grid[y][x] was non-zero, display the corresponding square
+				drawImage(x * 20 + borderInner.x, y * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
 void drawPiece(int(&piece)[4][4], int pieceX, int pieceY) {
+	// Draw the current piece based on its position within the grid
+
 	for (int y = 0; y < 4; y++) {
 		for (int x = 0; x < 4; x++) {
 			SDL_Surface *SQUARE_CURRENT = NULL;
@@ -362,12 +363,15 @@ void drawPiece(int(&piece)[4][4], int pieceX, int pieceY) {
 			case 7: SQUARE_CURRENT = SQUARE_ORANGE; break;
 			}
 
-			if (SQUARE_CURRENT != NULL) drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
+			if (SQUARE_CURRENT != NULL) // Only draw non-empty squares
+				drawImage((x + pieceX) * 20 + borderInner.x, (y + pieceY) * 20 + borderInner.y, SQUARE_CURRENT, SCREEN);
 		}
 	}
 }
 
 SDL_Surface *LoadImage(string filename) {
+	// Load and return the image found at "filename"
+
 	SDL_Surface* LoadedImage = NULL;
 	SDL_Surface* OptimizedImage = NULL;
 
